@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: clti-diagnosis
+    runtime: docker
+    plan: free
+    autoDeploy: true
+    healthCheckPath: /health
+    envVars:
+      - key: ASPNETCORE_ENVIRONMENT
+        value: Production
+      - key: PORT
+        value: "10000"
+      - key: DATABASE_URL
+        value: postgresql://neondb_owner:npg_cABYdI4NE3LW@ep-flat-brook-akiib4uo-pooler.c-3.us-west-2.aws.neon.tech/clti?sslmode=require&channel_binding=require
+      - key: Jwt__Key
+        value: 4GbqnWN8tpKAF+E5yLQXtZt+Zgm8KT2Fnd4LyTHnGbmcjPJ+mqQA0baKqFY14XIh
+      - key: Jwt__Issuer
+        value: CLTI.Diagnosis
+      - key: Jwt__Audience
+        value: CLTI.Diagnosis.Client
