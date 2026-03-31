@@ -17,8 +17,8 @@ using Microsoft.AspNetCore.Authentication;
 using System.Security.Claims;
 using CLTI.Diagnosis.Data;
 using Serilog;
-using Microsoft.Extensions.Caching.SqlServer;
 using Microsoft.AspNetCore.DataProtection;
+using System.Globalization;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -35,10 +35,138 @@ builder.Services.AddRazorComponents()
 builder.Services.AddControllers();
 
 // DB context
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
-    ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
+var databaseUrl =
+    builder.Configuration["DATABASE_URL"]
+    ?? Environment.GetEnvironmentVariable("DATABASE_URL");
+
+var rawConnectionString =
+    databaseUrl
+    ?? builder.Configuration.GetConnectionString("DefaultConnection")
+    ?? throw new InvalidOperationException(
+        "Connection string 'DefaultConnection' not found (or DATABASE_URL not set).");
+
+static bool LooksLikePostgres(string cs) =>
+    cs.StartsWith("postgres://", StringComparison.OrdinalIgnoreCase)
+    || cs.StartsWith("postgresql://", StringComparison.OrdinalIgnoreCase)
+    || cs.Contains("Host=", StringComparison.OrdinalIgnoreCase)
+    || cs.Contains("Username=", StringComparison.OrdinalIgnoreCase);
+
+var usePostgres = !string.IsNullOrWhiteSpace(databaseUrl) || LooksLikePostgres(rawConnectionString);
+var connectionString = usePostgres ? NormalizePostgresConnectionString(rawConnectionString) : rawConnectionString;
+
+static string NormalizePostgresConnectionString(string cs)
+{
+    if (cs.StartsWith("Host=", StringComparison.OrdinalIgnoreCase) ||
+        cs.StartsWith("Server=", StringComparison.OrdinalIgnoreCase))
+    {
+        return cs;
+    }
+
+    if (!cs.StartsWith("postgres://", StringComparison.OrdinalIgnoreCase) &&
+        !cs.StartsWith("postgresql://", StringComparison.OrdinalIgnoreCase))
+    {
+        return cs;
+    }
+
+    var uri = new Uri(cs);
+    var userInfo = uri.UserInfo.Split(':', 2);
+    var username = userInfo.Length > 0 ? Uri.UnescapeDataString(userInfo[0]) : string.Empty;
+    var password = userInfo.Length > 1 ? Uri.UnescapeDataString(userInfo[1]) : string.Empty;
+    var database = uri.AbsolutePath.Trim('/');
+
+    var port = uri.IsDefaultPort || uri.Port <= 0 ? 5432 : uri.Port;
+
+    var parts = new List<string>
+    {
+        $"Host={uri.Host}",
+        $"Port={port}",
+        $"Database={database}",
+        $"Username={username}",
+        $"Password={password}"
+    };
+
+    if (!string.IsNullOrWhiteSpace(uri.Query))
+    {
+        var queryPairs = uri.Query.TrimStart('?')
+            .Split('&', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
+        foreach (var pair in queryPairs)
+        {
+            var kv = pair.Split('=', 2);
+            var key = Uri.UnescapeDataString(kv[0]);
+            var value = kv.Length > 1 ? Uri.UnescapeDataString(kv[1]) : string.Empty;
+
+            if (string.IsNullOrWhiteSpace(key))
+                continue;
+
+            if (key.Equals("sslmode", StringComparison.OrdinalIgnoreCase))
+            {
+                parts.Add($"SSL Mode={value}");
+                continue;
+            }
+
+            if (key.Equals("channel_binding", StringComparison.OrdinalIgnoreCase))
+            {
+                parts.Add($"Channel Binding={value}");
+                continue;
+            }
+
+            var normalizedKey = CultureInfo.InvariantCulture.TextInfo.ToTitleCase(
+                key.Replace("_", " ").ToLowerInvariant());
+            parts.Add($"{normalizedKey}={value}");
+        }
+    }
+
+    return string.Join(";", parts);
+}
+
+static async Task EnsurePostgresCaseSchemaAsync(IServiceProvider services)
+{
+    using var scope = services.CreateScope();
+    var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    var logger = scope.ServiceProvider.GetRequiredService<ILoggerFactory>().CreateLogger("PostgresSchemaBootstrap");
+
+    var commands = new[]
+    {
+        """ALTER TABLE "u_clti" ADD COLUMN IF NOT EXISTS "PatientFullName" character varying(200) NOT NULL DEFAULT 'Без імені';""",
+        """ALTER TABLE "u_clti" ADD COLUMN IF NOT EXISTS "CaseStatus" character varying(20) NOT NULL DEFAULT 'Open';""",
+        """ALTER TABLE "u_clti" ADD COLUMN IF NOT EXISTS "LastVisitedStep" character varying(256);""",
+        """ALTER TABLE "u_clti" ADD COLUMN IF NOT EXISTS "LastClosedStep" character varying(256);""",
+        """ALTER TABLE "u_clti" ADD COLUMN IF NOT EXISTS "IsWCompleted" boolean NOT NULL DEFAULT FALSE;""",
+        """ALTER TABLE "u_clti" ADD COLUMN IF NOT EXISTS "IsICompleted" boolean NOT NULL DEFAULT FALSE;""",
+        """ALTER TABLE "u_clti" ADD COLUMN IF NOT EXISTS "IsfICompleted" boolean NOT NULL DEFAULT FALSE;""",
+        """ALTER TABLE "u_clti" ADD COLUMN IF NOT EXISTS "IsWiFIResultsCompleted" boolean NOT NULL DEFAULT FALSE;""",
+        """ALTER TABLE "u_clti" ADD COLUMN IF NOT EXISTS "IsCRABCompleted" boolean NOT NULL DEFAULT FALSE;""",
+        """ALTER TABLE "u_clti" ADD COLUMN IF NOT EXISTS "Is2YLECompleted" boolean NOT NULL DEFAULT FALSE;""",
+        """ALTER TABLE "u_clti" ADD COLUMN IF NOT EXISTS "IsSurgicalRiskCompleted" boolean NOT NULL DEFAULT FALSE;""",
+        """ALTER TABLE "u_clti" ADD COLUMN IF NOT EXISTS "IsGLASSCompleted" boolean NOT NULL DEFAULT FALSE;""",
+        """ALTER TABLE "u_clti" ADD COLUMN IF NOT EXISTS "IsGLASSFemoroPoplitealCompleted" boolean NOT NULL DEFAULT FALSE;""",
+        """ALTER TABLE "u_clti" ADD COLUMN IF NOT EXISTS "IsGLASSInfrapoplitealCompleted" boolean NOT NULL DEFAULT FALSE;""",
+        """ALTER TABLE "u_clti" ADD COLUMN IF NOT EXISTS "IsGLASSFinalCompleted" boolean NOT NULL DEFAULT FALSE;""",
+        """ALTER TABLE "u_clti" ADD COLUMN IF NOT EXISTS "IsSubmalleolarDiseaseCompleted" boolean NOT NULL DEFAULT FALSE;""",
+        """ALTER TABLE "u_clti" ADD COLUMN IF NOT EXISTS "IsRevascularizationAssessmentCompleted" boolean NOT NULL DEFAULT FALSE;""",
+        """ALTER TABLE "u_clti" ADD COLUMN IF NOT EXISTS "IsRevascularizationMethodCompleted" boolean NOT NULL DEFAULT FALSE;"""
+    };
+
+    foreach (var sql in commands)
+    {
+        await db.Database.ExecuteSqlRawAsync(sql);
+    }
+
+    logger.LogInformation("Postgres schema bootstrap for u_clti completed.");
+}
+
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlServer(connectionString));
+{
+    if (usePostgres)
+    {
+        options.UseNpgsql(connectionString);
+    }
+    else
+    {
+        options.UseSqlServer(connectionString);
+    }
+});
 
 // ✅ DATA PROTECTION (required for session encryption)
 // Persist keys so session cookies survive app restarts
@@ -51,20 +179,26 @@ builder.Services.AddDataProtection()
     .SetDefaultKeyLifetime(TimeSpan.FromDays(90));
 
 // ✅ SESSION STORAGE (Server-side - works even if cookies blocked)
-// Use SQL Server distributed cache for both Development and Production
-// This ensures sessions survive server restarts (important for user experience)
-builder.Services.AddDistributedSqlServerCache(options =>
+if (usePostgres)
 {
-    options.ConnectionString = connectionString;
-    options.SchemaName = "dbo";
-    options.TableName = "SessionCache";
-    
-    // Optional: Cleanup old sessions automatically
-    options.DefaultSlidingExpiration = TimeSpan.FromMinutes(20);
-});
+    // Postgres: keep session storage simple and avoid SQL Server SessionCache initializer.
+    // If you need multi-instance persistence later, swap this for Redis.
+    builder.Services.AddDistributedMemoryCache();
+}
+else
+{
+    // SQL Server distributed cache for session storage
+    builder.Services.AddDistributedSqlServerCache(options =>
+    {
+        options.ConnectionString = connectionString;
+        options.SchemaName = "dbo";
+        options.TableName = "SessionCache";
+        options.DefaultSlidingExpiration = TimeSpan.FromMinutes(20);
+    });
 
-// ✅ Initialize SessionCache table if it doesn't exist
-builder.Services.AddSingleton<CLTI.Diagnosis.Infrastructure.Services.SessionCacheInitializer>();
+    // Initialize SessionCache table if it doesn't exist
+    builder.Services.AddSingleton<CLTI.Diagnosis.Infrastructure.Services.SessionCacheInitializer>();
+}
 
 // ✅ SESSION CONFIGURATION (works without cookies via headers)
 builder.Services.AddSession(options =>
@@ -378,9 +512,16 @@ app.UseStaticFiles();
 app.UseCors("AllowAll");
 app.UseRouting();
 
-// ✅ Initialize SessionCache table before using session
-var sessionCacheInitializer = app.Services.GetRequiredService<CLTI.Diagnosis.Infrastructure.Services.SessionCacheInitializer>();
-sessionCacheInitializer.EnsureCreated();
+if (!usePostgres)
+{
+    // Initialize SessionCache table before using session (SQL Server only)
+    var sessionCacheInitializer = app.Services.GetRequiredService<CLTI.Diagnosis.Infrastructure.Services.SessionCacheInitializer>();
+    sessionCacheInitializer.EnsureCreated();
+}
+else
+{
+    await EnsurePostgresCaseSchemaAsync(app.Services);
+}
 
 app.UseSession(); // ✅ Enable session middleware (must be before UseAuthentication)
 app.UseMiddleware<CLTI.Diagnosis.Web.Middleware.SessionTokenMiddleware>(); // ✅ Auto-add session token to API requests
