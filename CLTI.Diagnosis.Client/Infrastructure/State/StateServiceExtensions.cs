@@ -1,11 +1,5 @@
-﻿using CLTI.Diagnosis.Client.Infrastructure.Auth;
-using CLTI.Diagnosis.Client.Infrastructure.Http;
+﻿using CLTI.Diagnosis.Client.Infrastructure.Http;
 using CLTI.Diagnosis.Client.Infrastructure.State;
-using CLTI.Diagnosis.Client.Features.Diagnosis.Services;
-using CLTI.Diagnosis.Client.Infrastructure.Auth;
-using CLTI.Diagnosis.Client.Infrastructure.Http;
-using CLTI.Diagnosis.Client.Infrastructure.State;
-using CLTI.Diagnosis.Client.Features.Diagnosis.Services;
 
 namespace CLTI.Diagnosis.Client.Extensions
 {
@@ -24,6 +18,10 @@ namespace CLTI.Diagnosis.Client.Extensions
             return new StateServiceDto
             {
                 CaseId = stateService.CaseId,
+                PatientFullName = stateService.PatientFullName,
+                CaseStatus = stateService.CaseStatus,
+                LastVisitedStep = stateService.LastVisitedStep,
+                LastClosedStep = stateService.LastClosedStep,
 
                 // === Гемодинамічні параметри ===
                 KpiValue = stateService.KpiValue,
@@ -124,6 +122,10 @@ namespace CLTI.Diagnosis.Client.Extensions
         {
             // Зберігаємо CaseId
             stateService.CaseId = dto.CaseId;
+            stateService.PatientFullName = string.IsNullOrWhiteSpace(dto.PatientFullName) ? "Без імені" : dto.PatientFullName;
+            stateService.CaseStatus = string.IsNullOrWhiteSpace(dto.CaseStatus) ? "Open" : dto.CaseStatus;
+            stateService.LastVisitedStep = dto.LastVisitedStep;
+            stateService.LastClosedStep = dto.LastClosedStep;
 
             // Оновлюємо основні дані через наявні методи StateService
             stateService.UpdateKpiValue(dto.KpiValue);

@@ -12,6 +12,7 @@ namespace CLTI.Diagnosis.Client.Shared
     public partial class NavMenuAlgoritm : IDisposable
     {
         [Inject] private IUserClientService UserService { get; set; } = default!;
+        [Inject] private CLTI.Diagnosis.Client.Features.Diagnosis.Services.CltiCaseService CaseService { get; set; } = default!;
 
         // === Стан UI ===
         private bool showUserMenu = false;
@@ -98,6 +99,25 @@ namespace CLTI.Diagnosis.Client.Shared
         {
             StateService.OnChange -= HandleStateChange;
             UserService.OnUserChanged -= HandleUserChanged;
+        }
+
+        private async Task HandleHomeClick()
+        {
+            var relativePath = NavigationManager.ToBaseRelativePath(NavigationManager.Uri);
+            var currentPath = "/" + relativePath.Split('?', '#')[0].TrimStart('/');
+            var isAlgorithmPage = currentPath.StartsWith("/Algoritm/Pages/", StringComparison.OrdinalIgnoreCase);
+
+            if (isAlgorithmPage && CaseService is not null)
+            {
+                var saved = await CaseService.SaveCaseAsync(StateService);
+                if (!saved)
+                {
+                    await JSRuntime.InvokeVoidAsync("alert", "Не вдалося зберегти кейс. Перевірте авторизацію та підключення до серверу.");
+                    return;
+                }
+            }
+
+            NavigationManager.NavigateTo("/", forceLoad: true);
         }
 
         // === Меню користувача ===

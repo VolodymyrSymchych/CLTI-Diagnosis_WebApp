@@ -1,88 +1,72 @@
 ﻿@page "/"
-
 @rendermode InteractiveServer
-
-@using Microsoft.AspNetCore.Authorization
-@inject IJSRuntime JS
-
+@using Microsoft.AspNetCore.Components.Web
 
 <div class="page-container">
     <NavMenuHome />
 
-    <div class="frame-parent">
-        <!-- In Progress Cases -->
-        <div class="in-progress-cases-parent">
-            <div class="in-progress-cases">In progress cases</div>
-
-            <div class="frame-group">
-                <div class="text-field-parent">
-                    @foreach (var name in new[] {
-                    "Олександр Ковальчук", "Марія Гончаренко", "Андрій Литвин",
-                    "Ірина Шевченко", "Максим Павленко", "Катерина Бойко",
-                    "Володимир Соловей", "Наталія Дьяченко", "Роман Зінченко",
-                    "Анастасія Мельник", "Юрій Савчук", "Ольга Ткаченко",
-                    "Сергій Мороз", "Дарина Клименко"
-                    })
-                    {
-                        <div class="text-field" @onclick="@((MouseEventArgs e) => OpenContextMenu(e.ClientX, e.ClientY, name))">
-                            <div class="name-surname">@name</div>
-                        </div>
-                    }
-
-                </div>
-
-                <div class="text-field-parent">
-                    @foreach (var name in new[] {
-                    "Лідія Петренко", "Артем Василенко", "Вікторія Романюк"
-                    })
-                    {
-                        <div class="text-field" @onclick="@((MouseEventArgs e) => OpenContextMenu(e.ClientX, e.ClientY, name))">
-                            <div class="name-surname">@name</div>
-                        </div>
-                    }
-                </div>
-            </div>
+    <div class="home-content">
+        <div class="search-row">
+            <input class="search-input"
+                   placeholder="Пошук по ПІБ, номеру кейсу, кроку"
+                   @bind="searchText"
+                   @bind:event="oninput" />
         </div>
 
-        <!-- Separator -->
-        <div class="frame-child"></div>
-
-        <!-- Done Cases -->
-        <div class="in-progress-cases-parent">
-            <div class="in-progress-cases">Done cases</div>
-
-            <div class="frame-group">
-                <div class="text-field-parent">
-                    @foreach (var name in new[] {
-                    "Дмитро Олійник", "Єлизавета Шаповал", "Назар Білик",
-                    "Тетяна Черненко", "Владислав Куліш", "Алла Остапчук",
-                    "Ілля Яровий", "Христина Дуброва", "Антон Герасименко",
-                    "Юлія Верес", "Степан Іванишин", "Валерія Завадська",
-                    "Марк Руденко", "Олена Березюк"
-                    })
+        <div class="split-layout">
+        <div class="cases-column">
+            <div class="section-title">In progress cases</div>
+            @if (isLoading)
+            {
+                <div class="state-message">Loading cases...</div>
+            }
+            else if (!OpenCases.Any())
+            {
+                <div class="state-message">No in-progress cases.</div>
+            }
+            else
+            {
+                <div class="cases-grid">
+                    @foreach (var caseItem in OpenCasesFiltered)
                     {
-                        <div class="text-field" @onclick="@((MouseEventArgs e) => OpenContextMenu(e.ClientX, e.ClientY, name))">
-                            <div class="name-surname">@name</div>
+                        <div class="case-card" @onclick="@((MouseEventArgs e) => OpenContextMenu(e.ClientX, e.ClientY, caseItem))">
+                            <div class="case-card-title">@caseItem.PatientFullName</div>
+                            <div class="case-card-subtitle">@GetLastStepDisplay(caseItem)</div>
                         </div>
                     }
                 </div>
+            }
+        </div>
 
-                <div class="text-field-parent">
-                    @foreach (var name in new[] {
-                    "Софія Костенко", "Еміль Шульц", "Сара Леві",
-                    "Алекс Картер", "Мішель Бонне", "Джон Сміт",
-                    "Лаура Гарсія", "Лука Россі", "Томас Мюллер"
-                    })
+        <div class="layout-separator"></div>
+
+        <div class="cases-column">
+            <div class="section-title">Done cases</div>
+            @if (isLoading)
+            {
+                <div class="state-message">Loading cases...</div>
+            }
+            else if (!DoneCases.Any())
+            {
+                <div class="state-message">No done cases.</div>
+            }
+            else
+            {
+                <div class="cases-grid">
+                    @foreach (var caseItem in DoneCasesFiltered)
                     {
-                        <div class="text-field" @onclick="@((MouseEventArgs e) => OpenContextMenu(e.ClientX, e.ClientY, name))">
-                            <div class="name-surname">@name</div>
+                        <div class="case-card" @onclick="@((MouseEventArgs e) => OpenContextMenu(e.ClientX, e.ClientY, caseItem))">
+                            <div class="case-card-title">@caseItem.PatientFullName</div>
+                            <div class="case-card-subtitle">@GetLastStepDisplay(caseItem)</div>
                         </div>
                     }
                 </div>
-            </div>
+            }
+        </div>
         </div>
     </div>
 
-    <!-- Context Menu - placed at page level -->
-    <ContextMenu @ref="contextMenuRef" />
+    <ContextMenu @ref="contextMenuRef"
+                 OnViewCase="HandleOpenCase"
+                 OnDeleteCase="HandleDeleteCase" />
 </div>

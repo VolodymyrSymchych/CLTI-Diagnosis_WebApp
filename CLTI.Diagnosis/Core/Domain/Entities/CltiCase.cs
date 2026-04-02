@@ -9,6 +9,21 @@ namespace CLTI.Diagnosis.Core.Domain.Entities;
 [Table("u_clti")]
 public sealed class CltiCase : BaseEntity, IValidatableObject
 {
+    // Meta дані кейсу для Home-списку та відновлення прогресу
+    [Required]
+    [MaxLength(200)]
+    public string PatientFullName { get; set; } = "Без імені";
+
+    [Required]
+    [MaxLength(20)]
+    public string CaseStatus { get; set; } = "Open";
+
+    [MaxLength(256)]
+    public string? LastVisitedStep { get; set; }
+
+    [MaxLength(256)]
+    public string? LastClosedStep { get; set; }
+
     // Гемодинамічні показники
     [Required]
     [Range(0.0, double.MaxValue)]
@@ -39,6 +54,22 @@ public sealed class CltiCase : BaseEntity, IValidatableObject
 
     // GLASS критерії
     public GlassCriteria GlassCriteria { get; set; } = new();
+
+    // Стан завершення кроків для відновлення прогресу
+    public bool IsWCompleted { get; set; }
+    public bool IsICompleted { get; set; }
+    public bool IsfICompleted { get; set; }
+    public bool IsWiFIResultsCompleted { get; set; }
+    public bool IsCRABCompleted { get; set; }
+    public bool Is2YLECompleted { get; set; }
+    public bool IsSurgicalRiskCompleted { get; set; }
+    public bool IsGLASSCompleted { get; set; }
+    public bool IsGLASSFemoroPoplitealCompleted { get; set; }
+    public bool IsGLASSInfrapoplitealCompleted { get; set; }
+    public bool IsGLASSFinalCompleted { get; set; }
+    public bool IsSubmalleolarDiseaseCompleted { get; set; }
+    public bool IsRevascularizationAssessmentCompleted { get; set; }
+    public bool IsRevascularizationMethodCompleted { get; set; }
 
     // Навігаційні властивості
     public ICollection<CltiPhoto> Photos { get; private set; } = new List<CltiPhoto>();

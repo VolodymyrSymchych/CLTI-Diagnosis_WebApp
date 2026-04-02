@@ -2,13 +2,14 @@
 // ✅ CltiCaseController.cs - Тепер використовує JWT
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using CLTI.Diagnosis.Services;
 
 namespace CLTI.Diagnosis.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    [Authorize] // ✅ Тепер використовує JWT за замовчуванням
+    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
     public class CltiCaseController : ControllerBase
     {
         private readonly CLTI.Diagnosis.Services.CltiCaseService _cltiCaseService;

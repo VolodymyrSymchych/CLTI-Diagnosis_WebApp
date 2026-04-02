@@ -1,151 +1,147 @@
-﻿/* Головний контейнер сторінки */
-.page-container {
+﻿.page-container {
     display: flex;
-    flex-direction: row; /* Горизонтальне розташування */
     min-height: 100vh;
     width: 100%;
 }
 
-/* Контейнер для основного контенту */
-.main-content {
-    flex: 1; /* Займає всю доступну ширину */
-    padding: 20px;
-    margin-left: 20px; /* Відступ від бічного меню */
-}
-
-.in-progress-cases {
-    position: relative;
-    font-weight: 600;
-    margin-bottom: 20px;
-    font-size: 18px;
-    color: #191919;
-}
-
-.name-surname {
-    position: relative;
-}
-
-.context-menu {
-    background: #fff;
-    border: 1px solid #ccc;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-    z-index: 1000;
+.home-content {
+    flex: 1;
+    padding: 24px;
+    font-family: Inter;
     display: flex;
     flex-direction: column;
+    justify-content: flex-start;
+    align-items: stretch;
+    max-width: 1120px;
 }
 
-    .context-menu .cm-btn {
-        padding: 8px 12px;
-        background: none;
-        border: none;
-        text-align: left;
-        cursor: pointer;
-    }
+.split-layout {
+    display: flex;
+    align-items: stretch;
+    justify-content: flex-start;
+    gap: 28px;
+    margin-top: 10px;
+    min-height: 0;
+    flex: 0 0 auto;
+}
 
-        .context-menu .cm-btn:hover {
-            background: #f0f0f0;
-        }
+.search-row {
+    width: 100%;
+    margin-bottom: 6px;
+}
 
-        .context-menu .cm-btn.delete {
-            color: red;
-        }
-
-.text-field {
-    align-self: stretch;
+.search-input {
+    width: 100%;
+    max-width: 560px;
+    height: 42px;
     border-radius: 8px;
-    background-color: #eeeef0;
+    border: 1px solid #9fbdf2;
+    background: #fff;
+    padding: 0 12px;
+    font-size: 14px;
+    font-family: Inter;
+    outline: none;
+}
+
+.search-input:focus {
+    border-color: #057cff;
+}
+
+.cases-column {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+}
+
+.section-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: #191919;
+    margin-bottom: 10px;
+    margin-top: 0;
+    letter-spacing: 0.1px;
+}
+
+.layout-separator {
+    width: 1px;
+    align-self: stretch;
+    background-color: #d4d8e0;
+}
+
+.state-message {
+    color: #646464;
+    font-size: 14px;
+}
+
+.cases-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px 12px;
+}
+
+.case-card {
+    border-radius: 6px;
+    background-color: #f5f6f8;
     border: 1px solid #057cff;
     box-sizing: border-box;
-    height: 46px;
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    justify-content: center;
-    padding: 12px 20px;
+    min-height: 38px;
+    padding: 8px 10px;
     cursor: pointer;
-    transition: background-color 0.3s ease;
-}
-
-    .text-field:hover {
-        background-color: #dcdce0;
-    }
-
-.text-field-parent {
-    width: 200px;
+    transition: background-color 0.2s ease;
     display: flex;
     flex-direction: column;
+    justify-content: center;
     align-items: flex-start;
-    justify-content: flex-start;
-    gap: 10px;
 }
 
-.frame-group {
-    display: flex;
-    flex-direction: row; /* Горизонтальне розташування колонок */
-    align-items: flex-start;
-    justify-content: flex-start; /* Зміна з center на flex-start */
-    gap: 20px;
-    font-size: 14px;
-    color: #000;
-    flex-wrap: wrap; /* Дозволяє перенос колонок */
+.case-card:hover {
+    background-color: #eceff4;
 }
 
-.in-progress-cases-parent {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    justify-content: flex-start;
-    gap: 20px;
-    flex: 1; /* Займає доступний простір */
-}
-
-.frame-child {
-    width: 1px;
-    background-color: #dedede;
-    height: 100%; /* Автоматична висота */
-    margin: 0 40px; /* Відступи зліва і справа */
-}
-
-.frame-parent {
-    display: flex;
-    flex-direction: row; /* ГОЛОВНЕ: горизонтальне розташування */
-    align-items: flex-start; /* Зміна з center на flex-start */
-    justify-content: flex-start;
-    gap: 40px; /* Зменшено відступ */
-    text-align: left;
-    font-size: 16px;
+.case-card-title {
+    font-size: 12px;
+    font-weight: 500;
     color: #191919;
-    font-family: Inter;
-    width: 100%;
-    padding: 20px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
 }
 
-/* Стилі для бічного меню (якщо потрібно) */
-.sidebar {
-    width: 250px;
-    min-width: 250px;
-    background-color: #f8f9fa;
-    padding: 20px;
-    box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+.case-card-subtitle {
+    font-size: 11px;
+    color: #596273;
+    margin-top: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
 }
 
-/* Респонсивність для мобільних пристроїв */
-@media (max-width: 768px) {
+@media (max-width: 900px) {
     .page-container {
         flex-direction: column;
     }
 
-    .frame-parent {
+    .split-layout {
         flex-direction: column;
-        gap: 20px;
+        gap: 16px;
     }
 
-    .frame-group {
-        flex-direction: column;
-    }
-
-    .sidebar {
+    .layout-separator {
         width: 100%;
-        min-width: auto;
+        min-height: 1px;
+        height: 1px;
+    }
+
+    .home-content {
+        padding: 16px;
+        max-width: none;
+    }
+
+    .cases-grid {
+        grid-template-columns: 1fr;
     }
 }

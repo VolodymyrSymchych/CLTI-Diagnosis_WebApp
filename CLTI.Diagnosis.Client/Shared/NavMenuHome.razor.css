@@ -1,4 +1,4 @@
-﻿/* === Логотип === */
+/* === Логотип === */
 .logo-menu-1-icon {
     width: 304px;
     max-height: 100%;
@@ -50,6 +50,39 @@
 
 .component-12-parent {
     gap: 20px;
+}
+
+/* === Випадаюче меню інформаційних посилань === */
+.info-toggle-button {
+    padding: 0;
+    border: none;
+    background: transparent;
+    width: 100%;
+    text-align: left;
+}
+
+.info-toggle-button:focus {
+    outline: none;
+}
+
+.info-toggle-button .component-7 {
+    justify-content: space-between;
+}
+
+.info-toggle-button .caretdown-icon {
+    margin-left: auto;
+}
+
+.info-dropdown {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    margin-top: 8px;
+}
+
+.info-dropdown > a {
+    text-decoration: none;
 }
 
 /* === Кнопки/блоки === */

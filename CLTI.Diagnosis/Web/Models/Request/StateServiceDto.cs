@@ -5,6 +5,10 @@ namespace CLTI.Diagnosis.Services
     public class StateServiceDto
     {
         public int? CaseId { get; set; }
+        public string? PatientFullName { get; set; }
+        public string CaseStatus { get; set; } = "Open";
+        public string? LastVisitedStep { get; set; }
+        public string? LastClosedStep { get; set; }
 
         // === Гемодинамічні параметри ===
         public double KpiValue { get; set; } = 0;
@@ -93,6 +97,17 @@ namespace CLTI.Diagnosis.Services
         public int ClinicalStage { get; set; }
         public int? CRABTotalScore { get; set; }
         public double? YLETotalScore { get; set; }
+    }
+
+    public class CaseListItemDto
+    {
+        public int CaseId { get; set; }
+        public string PatientFullName { get; set; } = "Без імені";
+        public string CaseStatus { get; set; } = "Open";
+        public string? LastVisitedStep { get; set; }
+        public string? LastClosedStep { get; set; }
+        public DateTime CreatedAt { get; set; }
+        public DateTime? ModifiedAt { get; set; }
     }
 
     public class SaveCaseResponse

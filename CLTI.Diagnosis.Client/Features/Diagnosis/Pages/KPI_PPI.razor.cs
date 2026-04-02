@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Components;
+using Microsoft.JSInterop;
 
 namespace CLTI.Diagnosis.Client.Features.Diagnosis.Pages
 {
@@ -10,6 +11,8 @@ namespace CLTI.Diagnosis.Client.Features.Diagnosis.Pages
 
         [Inject]
         public CLTI.Diagnosis.Client.Features.Diagnosis.Services.CltiCaseService? CaseService { get; set; }
+        [Inject]
+        public IJSRuntime JSRuntime { get; set; } = default!;
 
         protected override void OnInitialized()
         {
@@ -18,6 +21,12 @@ namespace CLTI.Diagnosis.Client.Features.Diagnosis.Pages
         }
 
         private bool HasKpiValue() => StateService.KpiValue > 0;
+
+        private void HandlePatientNameChanged(string value)
+        {
+            StateService.PatientFullName = string.IsNullOrWhiteSpace(value) ? "Без імені" : value.Trim();
+            StateService.NotifyStateChanged();
+        }
 
         private void HandleKpiInputChanged(string value)
         {
@@ -70,6 +79,16 @@ namespace CLTI.Diagnosis.Client.Features.Diagnosis.Pages
 
         private async void Exit()
         {
+            if (CaseService != null)
+            {
+                var saved = await CaseService.SaveCaseAsync(StateService);
+                if (!saved)
+                {
+                    await JSRuntime.InvokeVoidAsync("alert", "Не вдалося зберегти кейс. Перевірте авторизацію та підключення до серверу.");
+                    return;
+                }
+            }
+
             await InvokeAsync(StateHasChanged);
             NavigationManager.NavigateTo("/", forceLoad: true);
         }

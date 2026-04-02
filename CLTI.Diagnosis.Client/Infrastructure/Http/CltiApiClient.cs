@@ -234,6 +234,51 @@ namespace CLTI.Diagnosis.Client.Infrastructure.Http
                 };
             }
         }
+
+        public async Task<ApiResponse<List<CaseListItemDto>>> GetAllCasesAsync()
+        {
+            try
+            {
+                var request = await CreateAuthenticatedRequestAsync(HttpMethod.Get, "/api/clticase");
+                var response = await _httpClient.SendAsync(request);
+
+                if (response.IsSuccessStatusCode)
+                {
+                    var result = await response.Content.ReadFromJsonAsync<List<CaseListItemDto>>(_jsonOptions);
+                    return new ApiResponse<List<CaseListItemDto>>
+                    {
+                        Success = true,
+                        Data = result ?? new List<CaseListItemDto>(),
+                        Message = "Список cases успішно отримано"
+                    };
+                }
+                else if (response.StatusCode == HttpStatusCode.Unauthorized)
+                {
+                    return new ApiResponse<List<CaseListItemDto>>
+                    {
+                        Success = false,
+                        Error = "Помилка авторизації - токен недійсний"
+                    };
+                }
+                else
+                {
+                    var errorContent = await response.Content.ReadAsStringAsync();
+                    return new ApiResponse<List<CaseListItemDto>>
+                    {
+                        Success = false,
+                        Error = $"HTTP {response.StatusCode}: {errorContent}"
+                    };
+                }
+            }
+            catch (Exception ex)
+            {
+                return new ApiResponse<List<CaseListItemDto>>
+                {
+                    Success = false,
+                    Error = $"Помилка отримання списку: {ex.Message}"
+                };
+            }
+        }
     }
 
     #region DTO Classes (shared with server)
@@ -241,6 +286,10 @@ namespace CLTI.Diagnosis.Client.Infrastructure.Http
     public class StateServiceDto
     {
         public int? CaseId { get; set; }
+        public string? PatientFullName { get; set; }
+        public string CaseStatus { get; set; } = "Open";
+        public string? LastVisitedStep { get; set; }
+        public string? LastClosedStep { get; set; }
 
         // === Гемодинамічні параметри ===
         public double KpiValue { get; set; } = 0;
@@ -329,6 +378,17 @@ namespace CLTI.Diagnosis.Client.Infrastructure.Http
         public int ClinicalStage { get; set; }
         public int? CRABTotalScore { get; set; }
         public double? YLETotalScore { get; set; }
+    }
+
+    public class CaseListItemDto
+    {
+        public int CaseId { get; set; }
+        public string PatientFullName { get; set; } = "Без імені";
+        public string CaseStatus { get; set; } = "Open";
+        public string? LastVisitedStep { get; set; }
+        public string? LastClosedStep { get; set; }
+        public DateTime CreatedAt { get; set; }
+        public DateTime? ModifiedAt { get; set; }
     }
 
     public class SaveCaseResponse

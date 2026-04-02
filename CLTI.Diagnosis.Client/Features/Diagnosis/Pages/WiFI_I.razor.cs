@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Components;
+using Microsoft.JSInterop;
 
 namespace CLTI.Diagnosis.Client.Features.Diagnosis.Pages
 {
@@ -12,6 +13,8 @@ namespace CLTI.Diagnosis.Client.Features.Diagnosis.Pages
 
         [Inject]
         public CLTI.Diagnosis.Client.Features.Diagnosis.Services.CltiCaseService? CaseService { get; set; }
+        [Inject]
+        public IJSRuntime JSRuntime { get; set; } = default!;
         protected override void OnInitialized()
         {
             // Підписуємося на зміни стану
@@ -67,7 +70,12 @@ namespace CLTI.Diagnosis.Client.Features.Diagnosis.Pages
         {
             if (CaseService != null)
             {
-                await CaseService.SaveCaseAsync(StateService);
+                var saved = await CaseService.SaveCaseAsync(StateService);
+                if (!saved)
+                {
+                    await JSRuntime.InvokeVoidAsync("alert", "Не вдалося зберегти кейс. Перевірте авторизацію та підключення до серверу.");
+                    return;
+                }
             }
             await InvokeAsync(StateHasChanged);
             NavigationManager.NavigateTo("/Algoritm/Pages/Wifi_fI", forceLoad: true);

@@ -15,6 +15,12 @@ This folder contains all documentation files for the CLTI Diagnosis WebApp proje
 ### 🛠️ Development
 - **[fix-blaz.plan.md](./fix-blaz.plan.md)** - Blazor fixes and improvements plan
 
+### 📊 Project Management
+- **[PROJECT_SUMMARY.md](./PROJECT_SUMMARY.md)** - Короткий огляд проєкту (швидкий старт)
+- **[PROJECT_ROADMAP.md](./PROJECT_ROADMAP.md)** - План розвитку проєкту з погляду проджект-менеджера (структура, roadmap, метрики, ризики)
+- **[TASK_BREAKDOWN.md](./TASK_BREAKDOWN.md)** - Детальний розбір задач по фазах розвитку проєкту
+- **[PROJECT_STRUCTURE.md](./PROJECT_STRUCTURE.md)** - Детальна структура проєкту, архітектура та технологічний стек
+
 ## Adding New Documentation
 
 When creating new documentation files:

@@ -193,14 +193,19 @@ namespace CLTI.Diagnosis.Client.Features.Diagnosis.Pages
         // В методі SaveAndExit() додайте:
         private async Task SaveAndExit()
         {
-            if (CaseService != null)
-            {
-                await CaseService.SaveCaseAsync(StateService);
-            }
-            StateService.IsRevascularizationAssessmentCompleted = true; // ДОДАНО
+            StateService.IsRevascularizationAssessmentCompleted = true;
             StateService.NotifyStateChanged();
             await InvokeAsync(StateHasChanged);
-            // Повертаємося на домашню сторінку
+
+            if (CaseService != null)
+            {
+                var saved = await CaseService.SaveCaseAsync(StateService, markAsDone: true);
+                if (!saved)
+                {
+                    return;
+                }
+            }
+
             NavigationManager.NavigateTo("/", forceLoad: true);
         }
 

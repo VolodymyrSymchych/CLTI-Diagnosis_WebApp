@@ -1,4 +1,4 @@
-﻿using CLTI.Diagnosis.Client.Infrastructure.Auth;
+using CLTI.Diagnosis.Client.Infrastructure.Auth;
 using CLTI.Diagnosis.Client.Infrastructure.Http;
 using CLTI.Diagnosis.Client.Infrastructure.State;
 using CLTI.Diagnosis.Client.Features.Diagnosis.Services;
@@ -15,6 +15,7 @@ namespace CLTI.Diagnosis.Client.Shared
         // === Стан меню ===
         private bool showHemodynamic = true;
         private bool showUserMenu = false;
+        private bool showInfoMenu = false;
 
         // === Дані користувача ===
         private string username = "Користувач";
@@ -124,6 +125,13 @@ namespace CLTI.Diagnosis.Client.Shared
                 userContextMenuRef?.Hide();
             }
 
+            StateHasChanged();
+        }
+
+        // === Відображення / приховання інформаційного меню ===
+        public void ToggleInfoMenu()
+        {
+            showInfoMenu = !showInfoMenu;
             StateHasChanged();
         }
 

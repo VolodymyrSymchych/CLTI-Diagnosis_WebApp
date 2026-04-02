@@ -235,16 +235,21 @@ namespace CLTI.Diagnosis.Client.Features.Diagnosis.Pages
 
     private async Task SaveAndExit()
     {
-        if (CaseService != null)
-        {
-            await CaseService.SaveCaseAsync(StateService);
-        }
-        StateService.IsRevascularizationMethodCompleted = true; // ДОДАНО
+        StateService.IsRevascularizationMethodCompleted = true;
         StateService.NotifyStateChanged();
         await InvokeAsync(StateHasChanged);
-            // Повертаємося на домашню сторінку
-            NavigationManager.NavigateTo("/", forceLoad: true);
+
+        if (CaseService != null)
+        {
+            var saved = await CaseService.SaveCaseAsync(StateService, markAsDone: true);
+            if (!saved)
+            {
+                return;
+            }
         }
+
+        NavigationManager.NavigateTo("/", forceLoad: true);
+    }
 
         public void Dispose()
         {

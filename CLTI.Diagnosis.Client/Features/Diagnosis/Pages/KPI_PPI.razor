@@ -12,6 +12,17 @@
     <div class="main-content">
         <div class="input-group">
             <div class="item-title">
+                ПІБ пацієнта
+            </div>
+            <TextInput Value="@StateService.PatientFullName"
+                       ValueChanged="HandlePatientNameChanged"
+                       Placeholder="Введіть ПІБ пацієнта"
+                       Theme="light"
+                       State="default" />
+        </div>
+
+        <div class="input-group">
+            <div class="item-title">
                 Значення КПІ (кісточково-плечовий індекс)
             </div>
             <TextInput Value="@(StateService.KpiValue != 0 ? StateService.KpiValue.ToString() : kpiValueString)"

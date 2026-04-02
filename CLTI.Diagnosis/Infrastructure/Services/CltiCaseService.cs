@@ -54,6 +54,14 @@ namespace CLTI.Diagnosis.Services
                 }
 
                 // Маппінг основних даних
+                entity.PatientFullName = string.IsNullOrWhiteSpace(stateDto.PatientFullName)
+                    ? "Без імені"
+                    : stateDto.PatientFullName.Trim();
+                entity.CaseStatus = string.Equals(stateDto.CaseStatus, "Done", StringComparison.OrdinalIgnoreCase)
+                    ? "Done"
+                    : "Open";
+                entity.LastVisitedStep = stateDto.LastVisitedStep;
+                entity.LastClosedStep = stateDto.LastClosedStep;
                 entity.AbiKpi = stateDto.KpiValue;
                 entity.FbiPpi = stateDto.PpiValue;
 
@@ -81,7 +89,7 @@ namespace CLTI.Diagnosis.Services
                 _logger.LogDebug("WiFI levels - W: {W}, I: {I}, FI: {FI}", w, i, fi);
 
                 // CRAB та 2YLE
-                entity.ClinicalStageWIfIEnumItemId = stateDto.ClinicalStage;
+                entity.ClinicalStageWIfIEnumItemId = await ResolveClinicalStageEnumItemIdAsync(stateDto.ClinicalStage, entity);
                 entity.CrabPoints = stateDto.CRABTotalScore ?? 0;
                 entity.TwoYLE = stateDto.YLETotalScore ?? 0.0;
 
@@ -116,6 +124,22 @@ namespace CLTI.Diagnosis.Services
                 entity.GlassCriteria.ImdP0 = stateDto.SubmalleolarDescriptor == "P0";
                 entity.GlassCriteria.ImdP1 = stateDto.SubmalleolarDescriptor == "P1";
                 entity.GlassCriteria.ImdP2 = stateDto.SubmalleolarDescriptor == "P2";
+
+                // Completion flags для відновлення прогресу
+                entity.IsWCompleted = stateDto.IsWCompleted;
+                entity.IsICompleted = stateDto.IsICompleted;
+                entity.IsfICompleted = stateDto.IsfICompleted;
+                entity.IsWiFIResultsCompleted = stateDto.IsWiFIResultsCompleted;
+                entity.IsCRABCompleted = stateDto.IsCRABCompleted;
+                entity.Is2YLECompleted = stateDto.Is2YLECompleted;
+                entity.IsSurgicalRiskCompleted = stateDto.IsSurgicalRiskCompleted;
+                entity.IsGLASSCompleted = stateDto.IsGLASSCompleted;
+                entity.IsGLASSFemoroPoplitealCompleted = stateDto.IsGLASSFemoroPoplitealCompleted;
+                entity.IsGLASSInfrapoplitealCompleted = stateDto.IsGLASSInfrapoplitealCompleted;
+                entity.IsGLASSFinalCompleted = stateDto.IsGLASSFinalCompleted;
+                entity.IsSubmalleolarDiseaseCompleted = stateDto.IsSubmalleolarDiseaseCompleted;
+                entity.IsRevascularizationAssessmentCompleted = stateDto.IsRevascularizationAssessmentCompleted;
+                entity.IsRevascularizationMethodCompleted = stateDto.IsRevascularizationMethodCompleted;
 
                 _logger.LogInformation("Saving case to database...");
                 await _context.SaveChangesAsync();
@@ -164,6 +188,10 @@ namespace CLTI.Diagnosis.Services
                 return new StateServiceDto
                 {
                     CaseId = entity.Id,
+                    PatientFullName = entity.PatientFullName,
+                    CaseStatus = string.IsNullOrWhiteSpace(entity.CaseStatus) ? "Open" : entity.CaseStatus,
+                    LastVisitedStep = entity.LastVisitedStep,
+                    LastClosedStep = entity.LastClosedStep,
                     KpiValue = entity.AbiKpi,
                     PpiValue = entity.FbiPpi ?? 0,
 
@@ -184,7 +212,22 @@ namespace CLTI.Diagnosis.Services
                     GLASSFemoroPoplitealStage = $"Stage{entity.GlassCriteria.Fps}",
                     GLASSInfrapoplitealStage = $"Stage{entity.GlassCriteria.Ips}",
                     GLASSFinalStage = GetGLASSFinalStage(entity),
-                    SubmalleolarDescriptor = GetSubmalleolarDescriptor(entity)
+                    SubmalleolarDescriptor = GetSubmalleolarDescriptor(entity),
+
+                    IsWCompleted = entity.IsWCompleted,
+                    IsICompleted = entity.IsICompleted,
+                    IsfICompleted = entity.IsfICompleted,
+                    IsWiFIResultsCompleted = entity.IsWiFIResultsCompleted,
+                    IsCRABCompleted = entity.IsCRABCompleted,
+                    Is2YLECompleted = entity.Is2YLECompleted,
+                    IsSurgicalRiskCompleted = entity.IsSurgicalRiskCompleted,
+                    IsGLASSCompleted = entity.IsGLASSCompleted,
+                    IsGLASSFemoroPoplitealCompleted = entity.IsGLASSFemoroPoplitealCompleted,
+                    IsGLASSInfrapoplitealCompleted = entity.IsGLASSInfrapoplitealCompleted,
+                    IsGLASSFinalCompleted = entity.IsGLASSFinalCompleted,
+                    IsSubmalleolarDiseaseCompleted = entity.IsSubmalleolarDiseaseCompleted,
+                    IsRevascularizationAssessmentCompleted = entity.IsRevascularizationAssessmentCompleted,
+                    IsRevascularizationMethodCompleted = entity.IsRevascularizationMethodCompleted
                 };
             }
             catch (Exception ex)
@@ -235,7 +278,7 @@ namespace CLTI.Diagnosis.Services
         /// Отримує список всіх cases (для майбутнього використання)
         /// </summary>
         /// <returns>Список DTO з основними даними</returns>
-        public async Task<List<StateServiceDto>> GetAllCasesAsync()
+        public async Task<List<CaseListItemDto>> GetAllCasesAsync()
         {
             try
             {
@@ -247,15 +290,15 @@ namespace CLTI.Diagnosis.Services
 
                 _logger.LogInformation("Retrieved {CaseCount} cases from database", entities.Count);
 
-                return entities.Select(entity => new StateServiceDto
+                return entities.Select(entity => new CaseListItemDto
                 {
                     CaseId = entity.Id,
-                    KpiValue = entity.AbiKpi,
-                    PpiValue = entity.FbiPpi ?? 0,
-                    WLevelValue = GetWLevel(entity),
-                    ILevelValue = GetILevel(entity),
-                    FILevelValue = GetFILevel(entity),
-                    ClinicalStage = entity.ClinicalStageWIfIEnumItemId
+                    PatientFullName = string.IsNullOrWhiteSpace(entity.PatientFullName) ? "Без імені" : entity.PatientFullName,
+                    CaseStatus = string.IsNullOrWhiteSpace(entity.CaseStatus) ? "Open" : entity.CaseStatus,
+                    LastVisitedStep = entity.LastVisitedStep,
+                    LastClosedStep = entity.LastClosedStep,
+                    CreatedAt = entity.CreatedAt,
+                    ModifiedAt = entity.ModifiedAt
                 }).ToList();
             }
             catch (Exception ex)
@@ -266,6 +309,55 @@ namespace CLTI.Diagnosis.Services
         }
 
         #region Private Helper Methods
+
+        private async Task<int> ResolveClinicalStageEnumItemIdAsync(int incomingClinicalStage, CltiCase entity)
+        {
+            if (incomingClinicalStage > 0)
+            {
+                var exists = await _context.SysEnumItems.AnyAsync(e => e.Id == incomingClinicalStage);
+                if (exists)
+                {
+                    return incomingClinicalStage;
+                }
+            }
+
+            if (entity.ClinicalStageWIfIEnumItemId > 0)
+            {
+                var exists = await _context.SysEnumItems.AnyAsync(e => e.Id == entity.ClinicalStageWIfIEnumItemId);
+                if (exists)
+                {
+                    return entity.ClinicalStageWIfIEnumItemId;
+                }
+            }
+
+            var clinicalStageId = await _context.SysEnumItems
+                .Where(e => e.SysEnum != null
+                            && (e.SysEnum.Name == "ClinicalStageWIfI"
+                                || e.SysEnum.Name == "ClinicalStageWiFI"
+                                || EF.Functions.ILike(e.SysEnum.Name, "%clinical%stage%")))
+                .OrderBy(e => e.OrderIndex)
+                .ThenBy(e => e.Id)
+                .Select(e => e.Id)
+                .FirstOrDefaultAsync();
+
+            if (clinicalStageId > 0)
+            {
+                return clinicalStageId;
+            }
+
+            var anyEnumItemId = await _context.SysEnumItems
+                .OrderBy(e => e.Id)
+                .Select(e => e.Id)
+                .FirstOrDefaultAsync();
+
+            if (anyEnumItemId > 0)
+            {
+                _logger.LogWarning("ClinicalStage enum not found. Falling back to SysEnumItem Id {EnumItemId}", anyEnumItemId);
+                return anyEnumItemId;
+            }
+
+            throw new InvalidOperationException("No records found in sys_enum_item; cannot set ClinicalStageWIfIEnumItemId.");
+        }
 
         private static bool TryParseStageNumber(string? stageString, out int stageNumber)
         {

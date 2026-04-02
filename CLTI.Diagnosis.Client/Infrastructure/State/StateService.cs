@@ -76,6 +76,10 @@ namespace CLTI.Diagnosis.Client.Infrastructure.State
         /// Identifier of the saved CLTI case in the database.
         /// </summary>
         public int? CaseId { get; set; }
+        public string PatientFullName { get; set; } = "Без імені";
+        public string CaseStatus { get; set; } = "Open";
+        public string? LastVisitedStep { get; set; }
+        public string? LastClosedStep { get; set; }
         #endregion
 
         #region Basic Properties - KPI/PPI
@@ -570,6 +574,11 @@ namespace CLTI.Diagnosis.Client.Infrastructure.State
             _uiState.Reset();
 
             // Скидання станів кроків
+            CaseId = null;
+            PatientFullName = "Без імені";
+            CaseStatus = "Open";
+            LastVisitedStep = null;
+            LastClosedStep = null;
             KpiStepCompleted = false;
             PpiStepCompleted = false;
             IsWCompleted = false;
