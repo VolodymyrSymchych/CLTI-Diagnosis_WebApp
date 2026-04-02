@@ -33,17 +33,9 @@ builder.Services.AddHttpClient("InternalApi", client =>
 })
 .AddHttpMessageHandler<JwtAuthorizationHandler>();
 
-// Also configure the default HttpClient with JWT authorization for services that need it
-builder.Services.AddHttpClient<HttpClient>(client =>
-{
-    // For Blazor WebAssembly, the client and API are typically on the same server
-    // So we use the hosting origin as the base address
-    var baseAddress = builder.HostEnvironment.BaseAddress;
-    client.BaseAddress = new Uri(baseAddress);
-    client.DefaultRequestHeaders.Add("User-Agent", "CLTI-Diagnosis-Client");
-    client.Timeout = TimeSpan.FromSeconds(30);
-})
-.AddHttpMessageHandler<JwtAuthorizationHandler>();
+// Expose the named "InternalApi" client as the default HttpClient for services that inject it directly
+builder.Services.AddScoped(sp =>
+    sp.GetRequiredService<IHttpClientFactory>().CreateClient("InternalApi"));
 
 // API Client services
 builder.Services.AddScoped<CltiApiClient>();
