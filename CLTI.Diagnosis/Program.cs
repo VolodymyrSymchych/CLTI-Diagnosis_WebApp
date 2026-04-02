@@ -403,8 +403,10 @@ builder.Services.AddHttpClient("InternalApi", (sp, client) =>
     }
     else
     {
-        // Read base URL from configuration
-        baseUrl = configuration["InternalApi:BaseUrl"] ?? "https://antsdemo08.demo.dragon-cloud.org";
+        // In production, call the API on the same process via loopback to avoid
+        // HTTPS redirect loops behind Render's TLS-terminating reverse proxy.
+        var port = Environment.GetEnvironmentVariable("PORT") ?? configuration["PORT"] ?? "10000";
+        baseUrl = configuration["InternalApi:BaseUrl"] ?? $"http://localhost:{port}";
     }
 
     client.BaseAddress = new Uri(baseUrl);
@@ -507,7 +509,12 @@ else
     app.UseHsts();
 }
 
-app.UseHttpsRedirection();
+// Only redirect to HTTPS in development — in production Render terminates TLS at the
+// reverse proxy, so the app only ever receives plain HTTP internally. Enabling this in
+// production causes infinite redirect loops for Blazor Server loopback API calls.
+if (app.Environment.IsDevelopment())
+    app.UseHttpsRedirection();
+
 app.UseStaticFiles();
 app.UseCors("AllowAll");
 app.UseRouting();

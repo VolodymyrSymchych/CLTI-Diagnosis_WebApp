@@ -223,7 +223,28 @@ namespace CLTI.Diagnosis.Client.Infrastructure.Http
                 var content = await response.Content.ReadAsStringAsync();
                 _logger.LogDebug("Registration response content: {Content}", content);
 
-                var apiResponse = JsonSerializer.Deserialize<AuthApiResponse<object>>(content, _jsonOptions);
+                if (!LooksLikeJson(response, content))
+                {
+                    return new AuthApiResult<object>
+                    {
+                        Success = false,
+                        Message = !string.IsNullOrWhiteSpace(content)
+                            ? content.Trim()
+                            : $"Registration failed ({(int)response.StatusCode})"
+                    };
+                }
+
+                AuthApiResponse<object>? apiResponse;
+                try
+                {
+                    apiResponse = JsonSerializer.Deserialize<AuthApiResponse<object>>(content, _jsonOptions);
+                }
+                catch (JsonException ex)
+                {
+                    _logger.LogError(ex, "Failed to parse registration response. Content: {Content}",
+                        content.Length > 200 ? content.Substring(0, 200) : content);
+                    return new AuthApiResult<object> { Success = false, Message = "Server returned invalid registration response" };
+                }
 
                 return new AuthApiResult<object>
                 {
@@ -468,7 +489,13 @@ namespace CLTI.Diagnosis.Client.Infrastructure.Http
                 
                 var response = await _httpClient.PostAsJsonAsync(forgotPasswordUrl, request, _jsonOptions);
                 var content = await response.Content.ReadAsStringAsync();
-                var apiResponse = JsonSerializer.Deserialize<AuthApiResponse<object>>(content, _jsonOptions);
+
+                if (!LooksLikeJson(response, content))
+                    return new AuthApiResult<object> { Success = false, Message = $"Password reset failed ({(int)response.StatusCode})" };
+
+                AuthApiResponse<object>? apiResponse;
+                try { apiResponse = JsonSerializer.Deserialize<AuthApiResponse<object>>(content, _jsonOptions); }
+                catch (JsonException) { return new AuthApiResult<object> { Success = false, Message = "Invalid server response" }; }
 
                 return new AuthApiResult<object>
                 {
@@ -502,13 +529,16 @@ namespace CLTI.Diagnosis.Client.Infrastructure.Http
 
                 if (response.IsSuccessStatusCode)
                 {
-                    var apiResponse = JsonSerializer.Deserialize<AuthApiResponse<AuthLoginResponse>>(content, _jsonOptions);
+                    if (!LooksLikeJson(response, content))
+                        return new AuthApiResult<AuthLoginResponse> { Success = false, Message = "Token refresh failed" };
+
+                    AuthApiResponse<AuthLoginResponse>? apiResponse;
+                    try { apiResponse = JsonSerializer.Deserialize<AuthApiResponse<AuthLoginResponse>>(content, _jsonOptions); }
+                    catch (JsonException) { return new AuthApiResult<AuthLoginResponse> { Success = false, Message = "Invalid server response" }; }
 
                     if (apiResponse?.Success == true && apiResponse.Data != null)
                     {
-                        // ✅ New tokens are stored server-side automatically by the server
                         _logger.LogInformation("✅ Token refreshed - new tokens stored in server-side session");
-
                         return new AuthApiResult<AuthLoginResponse>
                         {
                             Success = true,
@@ -518,7 +548,13 @@ namespace CLTI.Diagnosis.Client.Infrastructure.Http
                     }
                 }
 
-                var errorResponse = JsonSerializer.Deserialize<AuthApiResponse<object>>(content, _jsonOptions);
+                if (!LooksLikeJson(response, content))
+                    return new AuthApiResult<AuthLoginResponse> { Success = false, Message = "Token refresh failed" };
+
+                AuthApiResponse<object>? errorResponse;
+                try { errorResponse = JsonSerializer.Deserialize<AuthApiResponse<object>>(content, _jsonOptions); }
+                catch (JsonException) { errorResponse = null; }
+
                 return new AuthApiResult<AuthLoginResponse>
                 {
                     Success = false,
@@ -538,16 +574,14 @@ namespace CLTI.Diagnosis.Client.Infrastructure.Http
 
         private static bool LooksLikeJson(HttpResponseMessage response, string? content)
         {
+            if (string.IsNullOrWhiteSpace(content))
+                return false;
+
             var mediaType = response.Content.Headers.ContentType?.MediaType;
             if (!string.IsNullOrWhiteSpace(mediaType) &&
                 mediaType.Contains("json", StringComparison.OrdinalIgnoreCase))
             {
                 return true;
-            }
-
-            if (string.IsNullOrWhiteSpace(content))
-            {
-                return false;
             }
 
             var trimmed = content.TrimStart();
