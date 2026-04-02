@@ -22,7 +22,7 @@
 </head>
 
 <body class="bg-gray-100">
-    <Routes @rendermode="InteractiveServer" />
+    <Routes @rendermode="InteractiveWebAssembly" />
     <!-- Loading Screen displayed while Blazor initializes -->
     <div id="loading-screen">
         <div class="logo-container">
@@ -36,7 +36,7 @@
     <div id="app"></div>
 
     <!-- Blazor WebAssembly Script -->
-    <script src="_framework/blazor.server.js"></script>
+    <script src="_framework/blazor.web.js"></script>
 
     <!-- Transition Script: Hides the loading screen and displays the app -->
     <script>
