@@ -66,14 +66,6 @@ builder.Services.AddScoped<AuthApiService>();
 
 var app = builder.Build();
 
-// Перевіряємо конфігурацію після створення app
-using (var scope = app.Services.CreateScope())
-{
-    var httpClient = scope.ServiceProvider.GetRequiredService<HttpClient>();
-    var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
-    logger.LogInformation("Final HttpClient BaseAddress verification: {BaseAddress}", httpClient.BaseAddress);
-}
-
 // Ініціалізуємо JWT провайдер після завантаження
 var authStateProvider = app.Services.GetRequiredService<JwtAuthenticationStateProvider>();
 await authStateProvider.InitializeAsync();

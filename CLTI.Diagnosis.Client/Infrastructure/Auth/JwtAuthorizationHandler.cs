@@ -13,7 +13,7 @@ namespace CLTI.Diagnosis.Client.Infrastructure.Auth
     public class JwtAuthorizationHandler : DelegatingHandler
     {
     private readonly JwtTokenService _tokenService;
-    private readonly HttpClient _httpClient;
+    private readonly IHttpClientFactory _httpClientFactory;
     private readonly IJSRuntime _jsRuntime;
     private readonly ILogger<JwtAuthorizationHandler> _logger;
     private readonly NavigationManager _navigation;
@@ -23,14 +23,14 @@ namespace CLTI.Diagnosis.Client.Infrastructure.Auth
 
         public JwtAuthorizationHandler(
             JwtTokenService tokenService,
-            HttpClient httpClient,
+            IHttpClientFactory httpClientFactory,
             IJSRuntime jsRuntime,
             ILogger<JwtAuthorizationHandler> logger,
             NavigationManager navigation)
         {
             Console.WriteLine("JwtAuthorizationHandler: Constructor called - handler is being instantiated");
             _tokenService = tokenService;
-            _httpClient = httpClient;
+            _httpClientFactory = httpClientFactory;
             _jsRuntime = jsRuntime;
             _logger = logger;
             _navigation = navigation;
@@ -151,9 +151,11 @@ namespace CLTI.Diagnosis.Client.Infrastructure.Auth
                     return false;
                 }
 
-                // Make refresh request
+                // Make refresh request using a plain client (no JWT handler) to avoid circular calls
                 var refreshRequest = new { refreshToken = refreshToken };
-                var response = await _httpClient.PostAsJsonAsync("/api/auth/refresh", refreshRequest);
+                var httpClient = _httpClientFactory.CreateClient();
+                httpClient.BaseAddress = new Uri(_navigation.BaseUri);
+                var response = await httpClient.PostAsJsonAsync("/api/auth/refresh", refreshRequest);
 
                 if (response.IsSuccessStatusCode)
                 {
