@@ -1,12 +1,13 @@
 using System.Security.Cryptography;
 using System.Text;
 using BCrypt.Net;
+using Microsoft.Extensions.Configuration;
 
 namespace CLTI.Diagnosis.Infrastructure.Services;
 
 /// <summary>
 /// Сервіс для хешування паролів з використанням сучасних стандартів безпеки.
-/// Використовує PBKDF2-SHA256 з 1,000,000 ітерацій (рекомендовано OWASP та NIST 2024-2025).
+/// Використовує PBKDF2-SHA256 з конфігурованою кількістю ітерацій.
 /// Підтримує міграцію зі старих алгоритмів (BCrypt, MD5) до нового стандарту.
 /// 
 /// Примітки щодо безпеки:
@@ -38,13 +39,23 @@ public interface IPasswordHasherService
 
 public class PasswordHasherService : IPasswordHasherService
 {
-    // Рекомендовано OWASP та NIST 2024-2025:
-    // - Мінімум 600,000 ітерацій для PBKDF2-SHA256 (поточне налаштування)
-    // - Оптимально 1,000,000+ ітерацій для кращої стійкості до атак
-    // - Argon2id рекомендується як найкращий вибір для нових проектів
-    private const int IterationCount = 1_000_000; // Підвищено до 1M для кращої безпеки (2025)
+    // This value is intentionally configurable. Render's shared CPUs make 1M PBKDF2
+    // iterations too slow for interactive login, so we target a lower but still
+    // non-trivial work factor and migrate hashes on successful login.
+    private const int DefaultIterationCount = 100_000;
+    private readonly int _iterationCount;
     private const int SaltSize = 16; // 128 біт (мінімум 16 байт рекомендовано NIST)
     private const int HashSize = 32; // 256 біт (SHA256)
+
+    public PasswordHasherService(IConfiguration configuration)
+    {
+        var configuredIterations = configuration.GetValue<int?>("PasswordHashing:TargetIterations");
+        _iterationCount = configuredIterations.GetValueOrDefault(DefaultIterationCount);
+        if (_iterationCount < 50_000)
+        {
+            _iterationCount = 50_000;
+        }
+    }
 
     public string HashPassword(string password)
     {
@@ -62,16 +73,16 @@ public class PasswordHasherService : IPasswordHasherService
         var hash = Rfc2898DeriveBytes.Pbkdf2(
             Encoding.UTF8.GetBytes(password),
             salt,
-            IterationCount,
+            _iterationCount,
             HashAlgorithmName.SHA256,
             HashSize
         );
 
-        // Формат: $pbkdf2-sha256$v=1$iterations=600000$salt$hash (base64)
+        // Format: $pbkdf2-sha256$v=1$iterations=<n>$salt$hash (base64)
         var saltBase64 = Convert.ToBase64String(salt);
         var hashBase64 = Convert.ToBase64String(hash);
 
-        return $"$pbkdf2-sha256$v=1$iterations={IterationCount}${saltBase64}${hashBase64}";
+        return $"$pbkdf2-sha256$v=1$iterations={_iterationCount}${saltBase64}${hashBase64}";
     }
 
     public bool VerifyPassword(string password, string hash, string? hashType = null)
@@ -107,7 +118,7 @@ public class PasswordHasherService : IPasswordHasherService
     {
         try
         {
-            // Формат: $pbkdf2-sha256$v=1$iterations=600000$salt$hash
+            // Format: $pbkdf2-sha256$v=1$iterations=<n>$salt$hash
             var parts = hash.Split('$');
             if (parts.Length < 6 || parts[1] != "pbkdf2-sha256")
                 return (false, false);
@@ -128,8 +139,8 @@ public class PasswordHasherService : IPasswordHasherService
             // Порівнюємо хеші (constant-time comparison для запобігання timing attacks)
             var isValid = CryptographicOperations.FixedTimeEquals(computedHash, expectedHash);
             
-            // Потрібна міграція якщо кількість ітерацій менша за рекомендовану
-            var needsMigration = isValid && iterations < IterationCount;
+            // Rehash whenever the stored work factor differs from the current target.
+            var needsMigration = isValid && iterations != _iterationCount;
 
             return (isValid, needsMigration);
         }
@@ -198,4 +209,3 @@ public class PasswordHasherService : IPasswordHasherService
     }
 
 }
-

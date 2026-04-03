@@ -3,6 +3,7 @@
 
 @using System.ComponentModel.DataAnnotations
 @inject AuthApiService AuthApi
+@inject IUserClientService UserService
 @inject NavigationManager NavigationManager
 @inject ILogger<Login> Logger
 
@@ -143,9 +144,21 @@
             {
                 Logger.LogInformation("✅ JWT Login successful for user: {Email}", Input.Email);
 
+                if (result.Data?.User != null)
+                {
+                    UserService.SetCurrentUser(new UserInfo
+                    {
+                        Id = result.Data.User.Id,
+                        FirstName = result.Data.User.FirstName,
+                        LastName = result.Data.User.LastName,
+                        Email = result.Data.User.Email,
+                        FullName = result.Data.User.FullName
+                    });
+                }
+
                 var redirectUrl = string.IsNullOrEmpty(ReturnUrl) ? "/" : ReturnUrl;
                 navigationStarted = true;
-                NavigationManager.NavigateTo(redirectUrl, forceLoad: false);
+                NavigationManager.NavigateTo(redirectUrl, forceLoad: true);
                 return;
             }
             else

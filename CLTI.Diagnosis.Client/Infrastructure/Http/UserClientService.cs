@@ -9,6 +9,7 @@ namespace CLTI.Diagnosis.Client.Infrastructure.Http
     public interface IUserClientService
     {
         Task<UserInfo?> GetCurrentUserAsync();
+        void SetCurrentUser(UserInfo? user);
         Task<bool> UpdateUserAsync(string firstName, string lastName, string email);
         Task<bool> ChangePasswordAsync(string oldPassword, string newPassword);
         Task<bool> DeleteUserAsync();
@@ -63,6 +64,12 @@ namespace CLTI.Diagnosis.Client.Infrastructure.Http
             {
                 _pendingLoadTask = null;
             }
+        }
+
+        public void SetCurrentUser(UserInfo? user)
+        {
+            _cachedUser = user;
+            OnUserChanged?.Invoke(user);
         }
 
         private async Task<UserInfo?> LoadCurrentUserAsync()
@@ -165,6 +172,7 @@ namespace CLTI.Diagnosis.Client.Infrastructure.Http
 
                 if (response.IsSuccessStatusCode)
                 {
+                    _cachedUser = null;
                     _logger.LogInformation("Password changed successfully");
                     return true;
                 }

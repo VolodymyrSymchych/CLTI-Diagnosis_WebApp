@@ -41,8 +41,6 @@ namespace CLTI.Diagnosis.Controllers
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginRequest request)
         {
-            using var transaction = await _context.Database.BeginTransactionAsync();
-            
             try
             {
                 _logger.LogInformation("API Login attempt for user: {Email}", request.Email);
@@ -221,8 +219,6 @@ namespace CLTI.Diagnosis.Controllers
                     _logger.LogDebug("Session committed after login | SessionId: {SessionId}", HttpContext.Session.Id);
                 }
 
-                await transaction.CommitAsync();
-                
                 // ✅ Verify cookie is in response headers before returning
                 var allSetCookieHeaders = Response.Headers["Set-Cookie"].ToList();
                 var userIdCookieSet = allSetCookieHeaders.Any(h => h != null && h.Contains("_userId="));
@@ -266,7 +262,6 @@ namespace CLTI.Diagnosis.Controllers
             }
             catch (Exception ex)
             {
-                await transaction.RollbackAsync();
                 _logger.LogError(ex, "Error during API login for user {Email}", request.Email);
                 return StatusCode(500, new ApiResponse<object>
                 {
