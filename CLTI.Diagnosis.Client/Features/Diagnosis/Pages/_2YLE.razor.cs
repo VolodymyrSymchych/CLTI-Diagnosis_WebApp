@@ -176,7 +176,7 @@ namespace CLTI.Diagnosis.Client.Features.Diagnosis.Pages
 
             StateService.NotifyStateChanged();
             await InvokeAsync(StateHasChanged);
-            NavigationManager.NavigateTo("/Algoritm/Pages/SurgicalRisk", forceLoad: true);
+            NavigationManager.NavigateTo("/Algoritm/Pages/SurgicalRisk", forceLoad: false);
             StateService.Is2YLECompleted = true;
         }
 

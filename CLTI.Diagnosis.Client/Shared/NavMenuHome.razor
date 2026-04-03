@@ -13,9 +13,9 @@
     <div class="logo-menu-1-parent">
 
         <!-- Логотип -->
-        <a href="/" class="btn btn-primary">
+        <button type="button" class="btn btn-primary" @onclick="NavigateHome">
             <img class="logo-menu-1-icon" src="Photo/logo-menu.png" alt="CLTI Diagnosis Logo">
-        </a>
+        </button>
 
         <div class="frame-wrapper">
             <div class="frame-group">
@@ -24,11 +24,11 @@
                 <div class="rectangle-parent">
 
                     <!-- Кнопка New patient -->
-                    <a href="/Algoritm/Pages/KPI-PPI" @onclick="OnNewPatientClick" class="btn btn-primary">
+                    <button type="button" @onclick="OnNewPatientClick" class="btn btn-primary">
                         <div class="component-7">
                             <div class="div">Новий пацієнт</div>
                         </div>
-                    </a>
+                    </button>
 
                     <!-- Інформаційні посилання у випадаючому списку -->
                     <div class="frame-child"></div>
@@ -86,11 +86,11 @@
                     }
 
                     <!-- Кнопка Ask Assistant -->
-                    <a href="/Pages/AssistantPage" class="btn btn-primary">
+                    <button type="button" class="btn btn-primary" @onclick="NavigateToAssistant">
                         <div class="component-7">
                             <div class="div">АІ асистент</div>
                         </div>
-                    </a>
+                    </button>
 
                     <div class="frame-child"></div>
                 </div>

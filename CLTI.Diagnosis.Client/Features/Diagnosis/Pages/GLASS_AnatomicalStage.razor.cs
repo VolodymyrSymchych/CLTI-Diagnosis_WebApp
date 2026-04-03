@@ -84,7 +84,7 @@ namespace CLTI.Diagnosis.Client.Features.Diagnosis.Pages
 
             StateService.NotifyStateChanged();
             await InvokeAsync(StateHasChanged);
-            NavigationManager.NavigateTo("/Algoritm/Pages/GLASS_FemoroPoplitealSegment", forceLoad: true);
+            NavigationManager.NavigateTo("/Algoritm/Pages/GLASS_FemoroPoplitealSegment", forceLoad: false);
             StateService.IsGLASSCompleted = true;
         }
 

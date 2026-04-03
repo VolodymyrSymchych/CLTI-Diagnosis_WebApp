@@ -50,7 +50,7 @@ namespace CLTI.Diagnosis.Client.Account.Pages
 
                     // Через кілька секунд перенаправляємо на логін
                     await Task.Delay(2000);
-                    NavigationManager.NavigateTo("/Account/Login", forceLoad: true);
+                    NavigationManager.NavigateTo("/Account/Login", forceLoad: false);
                 }
                 else
                 {

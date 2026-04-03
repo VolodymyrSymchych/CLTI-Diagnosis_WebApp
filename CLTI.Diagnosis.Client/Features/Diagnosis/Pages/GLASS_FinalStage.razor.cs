@@ -172,7 +172,7 @@ namespace CLTI.Diagnosis.Client.Features.Diagnosis.Pages
 
             await InvokeAsync(StateHasChanged);
             // Змінюємо навігацію на нову сторінку
-            NavigationManager.NavigateTo("/Algoritm/Pages/CLTI_SubmalleolarDisease", forceLoad: true);
+            NavigationManager.NavigateTo("/Algoritm/Pages/CLTI_SubmalleolarDisease", forceLoad: false);
         }
 
         public void Dispose()

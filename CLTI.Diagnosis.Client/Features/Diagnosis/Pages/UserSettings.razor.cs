@@ -231,7 +231,7 @@ namespace CLTI.Diagnosis.Client.Features.Diagnosis.Pages
                 if (success)
                 {
                     await JS.InvokeVoidAsync("alert", "Акаунт успішно видалено. До побачення!");
-                    NavigationManager.NavigateTo("/Account/Login", forceLoad: true);
+                    NavigationManager.NavigateTo("/Account/Login", forceLoad: false);
                 }
                 else
                 {

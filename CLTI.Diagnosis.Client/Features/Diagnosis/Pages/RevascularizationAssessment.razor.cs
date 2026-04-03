@@ -187,7 +187,7 @@ namespace CLTI.Diagnosis.Client.Features.Diagnosis.Pages
             StateService.NotifyStateChanged();
             await InvokeAsync(StateHasChanged);
             // Переходимо до наступного етапу (вибір методу реваскуляризації)
-            NavigationManager.NavigateTo("/Algoritm/Pages/RevascularizationMethod", forceLoad: true);
+            NavigationManager.NavigateTo("/Algoritm/Pages/RevascularizationMethod", forceLoad: false);
         }
 
         // В методі SaveAndExit() додайте:
@@ -206,7 +206,7 @@ namespace CLTI.Diagnosis.Client.Features.Diagnosis.Pages
                 }
             }
 
-            NavigationManager.NavigateTo("/", forceLoad: true);
+            NavigationManager.NavigateTo("/", forceLoad: false);
         }
 
         public void Dispose()

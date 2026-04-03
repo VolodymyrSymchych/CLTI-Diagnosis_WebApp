@@ -155,7 +155,7 @@ namespace CLTI.Diagnosis.Client.Features.Diagnosis.Pages
                 destination = "/Algoritm/Pages/KPI-PPI";
             }
 
-            NavigationManager.NavigateTo(destination, forceLoad: true);
+            NavigationManager.NavigateTo(destination, forceLoad: false);
         }
 
         private async Task HandleDeleteCase(int caseId)

@@ -35,13 +35,13 @@ namespace CLTI.Diagnosis.Client.Components
         // === Дії меню ===
         private void OnEditProfile()
         {
-            NavigationManager.NavigateTo("/Pages/UserSettings", forceLoad: true);
+            NavigationManager.NavigateTo("/Pages/UserSettings", forceLoad: false);
             Hide();
         }
 
         private void OnExit()
         {
-            NavigationManager.NavigateTo("/Account/Login", forceLoad: true);
+            NavigationManager.NavigateTo("/Account/Login", forceLoad: false);
             Hide();
         }
     }

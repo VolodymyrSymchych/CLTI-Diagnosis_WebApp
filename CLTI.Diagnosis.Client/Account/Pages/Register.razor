@@ -162,7 +162,7 @@
                 
                 // Redirect to login after a short delay
                 await Task.Delay(2000);
-                NavigationManager.NavigateTo("/Account/Login", forceLoad: true);
+                NavigationManager.NavigateTo("/Account/Login", forceLoad: false);
             }
             else
             {

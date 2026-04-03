@@ -114,7 +114,7 @@ namespace CLTI.Diagnosis.Client.Features.Diagnosis.Pages
 
             StateService.NotifyStateChanged();
             await InvokeAsync(StateHasChanged);
-            NavigationManager.NavigateTo("/Algoritm/Pages/GLASS_AnatomicalStage", forceLoad: true);
+            NavigationManager.NavigateTo("/Algoritm/Pages/GLASS_AnatomicalStage", forceLoad: false);
             StateService.IsSurgicalRiskCompleted = true;
         }
 

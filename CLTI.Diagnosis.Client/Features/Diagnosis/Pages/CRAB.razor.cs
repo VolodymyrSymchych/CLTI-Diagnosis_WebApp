@@ -107,7 +107,7 @@ namespace CLTI.Diagnosis.Client.Features.Diagnosis.Pages
                 await CaseService.SaveCaseAsync(StateService);
             }
             await InvokeAsync(StateHasChanged);
-            NavigationManager.NavigateTo("/Algoritm/Pages/2YLE", forceLoad: true);
+            NavigationManager.NavigateTo("/Algoritm/Pages/2YLE", forceLoad: false);
             StateService.IsCRABCompleted = true;
         }
 

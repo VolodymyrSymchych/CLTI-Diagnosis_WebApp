@@ -73,7 +73,7 @@ namespace CLTI.Diagnosis.Client.Features.Diagnosis.Pages
                 await CaseService.SaveCaseAsync(StateService);
             }
             await InvokeAsync(StateHasChanged);
-            NavigationManager.NavigateTo("/Algoritm/Pages/Wifi_W", forceLoad: true);
+            NavigationManager.NavigateTo("/Algoritm/Pages/Wifi_W", forceLoad: false);
             StateService.ShowWifiSection = true;
         }
 
@@ -90,7 +90,7 @@ namespace CLTI.Diagnosis.Client.Features.Diagnosis.Pages
             }
 
             await InvokeAsync(StateHasChanged);
-            NavigationManager.NavigateTo("/", forceLoad: true);
+            NavigationManager.NavigateTo("/", forceLoad: false);
         }
 
         public void Dispose()

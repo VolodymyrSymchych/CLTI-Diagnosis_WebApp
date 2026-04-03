@@ -129,7 +129,7 @@ namespace CLTI.Diagnosis.Client.Features.Diagnosis.Pages
                 }
             }
             await InvokeAsync(StateHasChanged);
-            NavigationManager.NavigateTo("/Algoritm/Pages/Wifi_I", forceLoad: true);
+            NavigationManager.NavigateTo("/Algoritm/Pages/Wifi_I", forceLoad: false);
             StateService.IsWCompleted = true;
         }
     }

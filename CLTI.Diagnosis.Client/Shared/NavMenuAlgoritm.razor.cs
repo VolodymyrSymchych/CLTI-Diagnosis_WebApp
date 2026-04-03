@@ -117,7 +117,7 @@ namespace CLTI.Diagnosis.Client.Shared
                 }
             }
 
-            NavigationManager.NavigateTo("/", forceLoad: true);
+            NavigationManager.NavigateTo("/", forceLoad: false);
         }
 
         // === Меню користувача ===
@@ -147,7 +147,7 @@ namespace CLTI.Diagnosis.Client.Shared
 
         public void Logout()
         {
-            NavigationManager.NavigateTo("/Account/Login", forceLoad: true);
+            NavigationManager.NavigateTo("/Account/Login", forceLoad: false);
             showUserMenu = false;
         }
 

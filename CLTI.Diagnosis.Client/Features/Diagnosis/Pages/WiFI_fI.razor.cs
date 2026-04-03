@@ -159,7 +159,7 @@ namespace CLTI.Diagnosis.Client.Features.Diagnosis.Pages
                 await CaseService.SaveCaseAsync(StateService);
             }
             await InvokeAsync(StateHasChanged);
-            NavigationManager.NavigateTo("/Algoritm/Pages/WiFI_results", forceLoad: true);
+            NavigationManager.NavigateTo("/Algoritm/Pages/WiFI_results", forceLoad: false);
             StateService.IsfICompleted = true;
         }
 

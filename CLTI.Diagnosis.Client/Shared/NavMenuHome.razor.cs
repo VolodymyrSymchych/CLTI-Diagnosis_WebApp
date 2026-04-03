@@ -102,6 +102,17 @@ namespace CLTI.Diagnosis.Client.Shared
         private void OnNewPatientClick()
         {
             StateService.Reset();
+            NavigationManager.NavigateTo("/Algoritm/Pages/KPI-PPI");
+        }
+
+        private void NavigateHome()
+        {
+            NavigationManager.NavigateTo("/");
+        }
+
+        private void NavigateToAssistant()
+        {
+            NavigationManager.NavigateTo("/Pages/AssistantPage");
         }
 
         // === Перемикання відображення секції гемодинаміки ===
@@ -152,7 +163,7 @@ namespace CLTI.Diagnosis.Client.Shared
         // === Вихід з системи ===
         public void Logout()
         {
-            NavigationManager.NavigateTo("/Account/Login", forceLoad: true);
+            NavigationManager.NavigateTo("/Account/Login", forceLoad: false);
             showUserMenu = false;
         }
 

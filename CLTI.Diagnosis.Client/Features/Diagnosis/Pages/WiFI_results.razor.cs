@@ -108,7 +108,7 @@ namespace CLTI.Diagnosis.Client.Features.Diagnosis.Pages
 
             StateService.NotifyStateChanged();
             await InvokeAsync(StateHasChanged);
-            NavigationManager.NavigateTo("/Algoritm/Pages/CRAB", forceLoad: true);
+            NavigationManager.NavigateTo("/Algoritm/Pages/CRAB", forceLoad: false);
             StateService.IsWiFIResultsCompleted = true;
         }
         public void Dispose()

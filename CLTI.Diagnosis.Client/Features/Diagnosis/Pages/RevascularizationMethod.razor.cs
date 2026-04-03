@@ -248,7 +248,7 @@ namespace CLTI.Diagnosis.Client.Features.Diagnosis.Pages
             }
         }
 
-        NavigationManager.NavigateTo("/", forceLoad: true);
+        NavigationManager.NavigateTo("/", forceLoad: false);
     }
 
         public void Dispose()

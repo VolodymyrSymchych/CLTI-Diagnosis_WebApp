@@ -112,7 +112,7 @@ namespace CLTI.Diagnosis.Client.Features.Diagnosis.Pages
 
             StateService.NotifyStateChanged();
             await InvokeAsync(StateHasChanged);
-            NavigationManager.NavigateTo("/Algoritm/Pages/GLASS_FinalStage", forceLoad: true);
+            NavigationManager.NavigateTo("/Algoritm/Pages/GLASS_FinalStage", forceLoad: false);
             StateService.IsGLASSInfrapoplitealCompleted = true;
         }
 

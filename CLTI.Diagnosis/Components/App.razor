@@ -13,6 +13,23 @@
     <link rel="stylesheet" href="@Assets["CLTI.Diagnosis.styles.css"]" />
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" />
+    <script>
+        (function () {
+            try {
+                if (sessionStorage.getItem('clti-app-booted') === '1') {
+                    document.documentElement.classList.add('clti-app-booted');
+                }
+            } catch {
+            }
+        })();
+    </script>
+    <style>
+        html.clti-app-booted #loading-screen {
+            display: none !important;
+            opacity: 0 !important;
+            pointer-events: none !important;
+        }
+    </style>
 
 
     <!-- Blazor Head Outlet -->
@@ -63,20 +80,40 @@
             const loadingScreen = document.getElementById('loading-screen');
             const app = document.getElementById('app');
 
+            if (app) {
+                app.classList.add('loaded');
+            }
+
+            if (!loadingScreen) {
+                try {
+                    sessionStorage.setItem('clti-app-booted', '1');
+                } catch {
+                }
+                return;
+            }
+
             // Fade out the loading screen
             loadingScreen.style.opacity = '0';
-
-            // Reveal the app
-            app.classList.add('loaded');
 
             // Remove the loading screen element after the transition completes
             setTimeout(() => {
                 loadingScreen.style.display = 'none';
             }, 100);
+
+            try {
+                sessionStorage.setItem('clti-app-booted', '1');
+                document.documentElement.classList.add('clti-app-booted');
+            } catch {
+            }
         }
 
         // Wait for the DOM to load and Blazor to initialize
         document.addEventListener('DOMContentLoaded', function () {
+            if (document.documentElement.classList.contains('clti-app-booted')) {
+                showApp();
+                return;
+            }
+
             // Use Blazor's event if available
             if (window.Blazor) {
                 Blazor.addEventListener('afterStarted', showApp);
@@ -95,7 +132,7 @@
                     }
                 }, 100);
             }
-            // Safety timeout: Show the app after 10 seconds regardless
+            // Safety timeout: Show the app after a short delay regardless
             setTimeout(showApp, 350);
         });
     </script>
