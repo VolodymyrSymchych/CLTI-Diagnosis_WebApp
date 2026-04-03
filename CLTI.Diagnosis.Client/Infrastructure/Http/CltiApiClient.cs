@@ -1,5 +1,4 @@
 ﻿// ✅ Оновлений CltiApiClient з JWT
-using CLTI.Diagnosis.Client.Infrastructure.Auth;
 using System.Net.Http.Json;
 using System.Text.Json;
 using System.Net;
@@ -9,13 +8,11 @@ namespace CLTI.Diagnosis.Client.Infrastructure.Http
     public class CltiApiClient
     {
         private readonly HttpClient _httpClient;
-        private readonly JwtTokenService _tokenService;
         private readonly JsonSerializerOptions _jsonOptions;
 
-        public CltiApiClient(HttpClient httpClient, JwtTokenService tokenService)
+        public CltiApiClient(HttpClient httpClient)
         {
             _httpClient = httpClient;
-            _tokenService = tokenService;
             _jsonOptions = new JsonSerializerOptions
             {
                 PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
@@ -23,24 +20,16 @@ namespace CLTI.Diagnosis.Client.Infrastructure.Http
             };
         }
 
-        private async Task<HttpRequestMessage> CreateAuthenticatedRequestAsync(HttpMethod method, string url)
+        private static HttpRequestMessage CreateRequest(HttpMethod method, string url)
         {
-            var request = new HttpRequestMessage(method, url);
-
-            var token = await _tokenService.GetTokenAsync();
-            if (!string.IsNullOrEmpty(token))
-            {
-                request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
-            }
-
-            return request;
+            return new HttpRequestMessage(method, url);
         }
 
         public async Task<ApiResponse<SaveCaseResponse>> SaveCaseAsync(StateServiceDto stateDto)
         {
             try
             {
-                var request = await CreateAuthenticatedRequestAsync(HttpMethod.Post, "/api/clticase/save");
+                var request = CreateRequest(HttpMethod.Post, "/api/clticase/save");
                 request.Content = JsonContent.Create(stateDto, options: _jsonOptions);
 
                 var response = await _httpClient.SendAsync(request);
@@ -87,7 +76,7 @@ namespace CLTI.Diagnosis.Client.Infrastructure.Http
         {
             try
             {
-                var request = await CreateAuthenticatedRequestAsync(HttpMethod.Get, $"/api/clticase/{caseId}");
+                var request = CreateRequest(HttpMethod.Get, $"/api/clticase/{caseId}");
                 var response = await _httpClient.SendAsync(request);
 
                 if (response.IsSuccessStatusCode)
@@ -140,7 +129,7 @@ namespace CLTI.Diagnosis.Client.Infrastructure.Http
         {
             try
             {
-                var request = await CreateAuthenticatedRequestAsync(HttpMethod.Put, $"/api/clticase/{caseId}");
+                var request = CreateRequest(HttpMethod.Put, $"/api/clticase/{caseId}");
                 request.Content = JsonContent.Create(stateDto, options: _jsonOptions);
 
                 var response = await _httpClient.SendAsync(request);
@@ -187,7 +176,7 @@ namespace CLTI.Diagnosis.Client.Infrastructure.Http
         {
             try
             {
-                var request = await CreateAuthenticatedRequestAsync(HttpMethod.Delete, $"/api/clticase/{caseId}");
+                var request = CreateRequest(HttpMethod.Delete, $"/api/clticase/{caseId}");
                 var response = await _httpClient.SendAsync(request);
 
                 if (response.IsSuccessStatusCode)
@@ -239,7 +228,7 @@ namespace CLTI.Diagnosis.Client.Infrastructure.Http
         {
             try
             {
-                var request = await CreateAuthenticatedRequestAsync(HttpMethod.Get, "/api/clticase");
+                var request = CreateRequest(HttpMethod.Get, "/api/clticase");
                 var response = await _httpClient.SendAsync(request);
 
                 if (response.IsSuccessStatusCode)

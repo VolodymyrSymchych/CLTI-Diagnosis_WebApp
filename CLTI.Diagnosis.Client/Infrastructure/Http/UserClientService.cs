@@ -21,6 +21,8 @@ namespace CLTI.Diagnosis.Client.Infrastructure.Http
         private readonly ILogger<UserClientService> _logger;
         private readonly JsonSerializerOptions _jsonOptions;
         private readonly AuthApiService _authApiService;
+        private UserInfo? _cachedUser;
+        private Task<UserInfo?>? _pendingLoadTask;
 
         public UserClientService(
             HttpClient httpClient,
@@ -41,6 +43,30 @@ namespace CLTI.Diagnosis.Client.Infrastructure.Http
 
         public async Task<UserInfo?> GetCurrentUserAsync()
         {
+            if (_cachedUser != null)
+            {
+                return _cachedUser;
+            }
+
+            if (_pendingLoadTask != null)
+            {
+                return await _pendingLoadTask;
+            }
+
+            _pendingLoadTask = LoadCurrentUserAsync();
+
+            try
+            {
+                return await _pendingLoadTask;
+            }
+            finally
+            {
+                _pendingLoadTask = null;
+            }
+        }
+
+        private async Task<UserInfo?> LoadCurrentUserAsync()
+        {
             try
             {
                 _logger.LogInformation("Attempting to get current user from server-side session");
@@ -59,6 +85,7 @@ namespace CLTI.Diagnosis.Client.Infrastructure.Http
                         Email = authUserDto.Email,
                         FullName = authUserDto.FullName
                     };
+                    _cachedUser = userInfo;
 
                     _logger.LogInformation("✅ Successfully retrieved user from server-side session: {Email} (ID: {Id})",
                         userInfo.Email, userInfo.Id);
@@ -69,6 +96,7 @@ namespace CLTI.Diagnosis.Client.Infrastructure.Http
                 else
                 {
                     _logger.LogWarning("❌ Failed to get user from server-side session: {Message}", result.Message);
+                    _cachedUser = null;
                     OnUserChanged?.Invoke(null);
                     return null;
                 }
@@ -76,16 +104,19 @@ namespace CLTI.Diagnosis.Client.Infrastructure.Http
             catch (HttpRequestException ex)
             {
                 _logger.LogError(ex, "Network error while getting current user");
+                _cachedUser = null;
                 return null;
             }
             catch (TaskCanceledException ex)
             {
                 _logger.LogError(ex, "Timeout while getting current user");
+                _cachedUser = null;
                 return null;
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Unexpected error getting current user");
+                _cachedUser = null;
                 return null;
             }
         }
@@ -107,7 +138,7 @@ namespace CLTI.Diagnosis.Client.Infrastructure.Http
                 if (response.IsSuccessStatusCode)
                 {
                     _logger.LogInformation("User update successful");
-                    // Refresh cached user data
+                    _cachedUser = null;
                     await GetCurrentUserAsync();
                     return true;
                 }
@@ -161,6 +192,7 @@ namespace CLTI.Diagnosis.Client.Infrastructure.Http
 
                 if (response.IsSuccessStatusCode)
                 {
+                    _cachedUser = null;
                     OnUserChanged?.Invoke(null);
                     _logger.LogInformation("User deleted successfully");
                     return true;

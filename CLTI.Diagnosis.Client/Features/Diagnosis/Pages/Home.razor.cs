@@ -50,8 +50,13 @@ namespace CLTI.Diagnosis.Client.Features.Diagnosis.Pages
         private IEnumerable<CaseListItemDto> OpenCasesFiltered => OpenCases.Where(MatchesSearch);
         private IEnumerable<CaseListItemDto> DoneCasesFiltered => DoneCases.Where(MatchesSearch);
 
-        protected override async Task OnInitializedAsync()
+        protected override async Task OnAfterRenderAsync(bool firstRender)
         {
+            if (!firstRender)
+            {
+                return;
+            }
+
             await LoadCasesAsync();
         }
 

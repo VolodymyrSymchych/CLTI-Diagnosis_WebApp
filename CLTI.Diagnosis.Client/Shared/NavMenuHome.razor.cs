@@ -24,15 +24,20 @@ namespace CLTI.Diagnosis.Client.Shared
         private UserContexMenu? userContextMenuRef;
 
         // === Ініціалізація компонента ===
-        protected override async Task OnInitializedAsync()
+        protected override void OnInitialized()
         {
             StateService.OnChange += HandleStateChange;
             UserService.OnUserChanged += HandleUserChanged;
+        }
 
-            // Завантажуємо дані користувача
+        protected override async Task OnAfterRenderAsync(bool firstRender)
+        {
+            if (!firstRender)
+            {
+                return;
+            }
+
             await LoadUserData();
-
-            base.OnInitialized();
         }
 
         // === Завантаження даних користувача ===

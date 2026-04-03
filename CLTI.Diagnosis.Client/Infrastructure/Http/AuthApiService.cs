@@ -2,14 +2,12 @@
 using CLTI.Diagnosis.Client.Infrastructure.Auth;
 using System.Net.Http.Json;
 using System.Text.Json;
-using Microsoft.JSInterop;
 
 namespace CLTI.Diagnosis.Client.Infrastructure.Http
 {
     public class AuthApiService
     {
         private readonly HttpClient _httpClient;
-        private readonly IJSRuntime _jsRuntime;
         private readonly JsonSerializerOptions _jsonOptions;
         private readonly ILogger<AuthApiService> _logger;
         private readonly string _baseUrl;
@@ -17,10 +15,9 @@ namespace CLTI.Diagnosis.Client.Infrastructure.Http
         // ✅ Tokens are stored server-side in session, not in localStorage
         // These constants are kept for backward compatibility but not used
 
-        public AuthApiService(HttpClient httpClient, IJSRuntime jsRuntime, ILogger<AuthApiService> logger)
+        public AuthApiService(HttpClient httpClient, ILogger<AuthApiService> logger)
         {
             _httpClient = httpClient;
-            _jsRuntime = jsRuntime;
             _logger = logger;
 
             // Use HttpClient's BaseAddress from configuration
@@ -94,32 +91,6 @@ namespace CLTI.Diagnosis.Client.Infrastructure.Http
                     if (apiResponse?.Success == true && apiResponse.Data != null)
                     {
                         _logger.LogInformation("🎉 Login successful | User ID: {UserId}", apiResponse.Data.User?.Id);
-
-                        // ✅ Try to set userId cookie via JavaScript as fallback
-                        // Browsers often block Set-Cookie headers from Fetch API responses (cross-origin restrictions)
-                        // JavaScript fallback ensures cookie is set even if header is blocked
-                        if (apiResponse.Data.User?.Id != null)
-                        {
-                            try
-                            {
-                                var userId = apiResponse.Data.User.Id;
-                                var expiresDate = DateTimeOffset.UtcNow.AddDays(30).ToUniversalTime();
-                                
-                                // Note: Cannot set HttpOnly via JavaScript, so we set it without HttpOnly
-                                // This is acceptable since userId is not sensitive (user ID is already known)
-                                var cookieValue = $"_userId={userId}; Path=/; Expires={expiresDate:r}; SameSite=Lax; Secure";
-                                
-                                // Set cookie via JavaScript
-                                await _jsRuntime.InvokeVoidAsync("eval", 
-                                    $@"(function() {{ document.cookie = '{cookieValue}'; }})();");
-                                
-                                _logger.LogInformation("✅ Set _userId cookie via JavaScript fallback: {UserId}", userId);
-                            }
-                            catch (Exception ex)
-                            {
-                                _logger.LogWarning(ex, "Failed to set cookie via JavaScript fallback: {Error}", ex.Message);
-                            }
-                        }
 
                         // ✅ Tokens are stored server-side in session (not in localStorage)
                         // The SessionTokenMiddleware will automatically add the token to API requests
@@ -431,6 +402,7 @@ namespace CLTI.Diagnosis.Client.Infrastructure.Http
             // This method is kept for backward compatibility but always returns null
             // The SessionTokenMiddleware automatically adds the token to requests
             _logger.LogDebug("GetTokenAsync called - tokens are stored server-side");
+            await Task.CompletedTask;
             return null;
         }
 
@@ -439,6 +411,7 @@ namespace CLTI.Diagnosis.Client.Infrastructure.Http
             // ✅ Tokens are stored server-side in session, not in localStorage
             // This method is kept for backward compatibility but always returns null
             _logger.LogDebug("GetRefreshTokenAsync called - tokens are stored server-side");
+            await Task.CompletedTask;
             return null;
         }
 

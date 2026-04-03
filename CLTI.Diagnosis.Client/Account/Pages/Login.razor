@@ -5,8 +5,6 @@
 @inject AuthApiService AuthApi
 @inject NavigationManager NavigationManager
 @inject ILogger<Login> Logger
-@inject IJSRuntime JS
-@implements IDisposable
 
 <PageTitle>Log in</PageTitle>
 
@@ -118,7 +116,6 @@
     private string? errorMessage;
     private bool isLoading = false;
     private bool showRetryButton = false;
-    private bool _hasRendered = false;
 
     [SupplyParameterFromForm]
     private InputModel Input { get; set; } = new();
@@ -129,6 +126,8 @@
     public async Task LoginUser()
     {
         if (isLoading) return;
+
+        var navigationStarted = false;
 
         try
         {
@@ -143,17 +142,11 @@
             if (result.Success)
             {
                 Logger.LogInformation("✅ JWT Login successful for user: {Email}", Input.Email);
-                
-                // Now we can call JavaScript directly because we have InteractiveServer mode!
-                Logger.LogInformation("💾 Storing tokens to localStorage...");
-                await AuthApi.StorePendingTokensAsync();
-                
-                // Small delay to ensure localStorage write completes before redirect
-                await Task.Delay(100);
-                
-                Logger.LogInformation("🚀 Redirecting to home page...");
+
                 var redirectUrl = string.IsNullOrEmpty(ReturnUrl) ? "/" : ReturnUrl;
+                navigationStarted = true;
                 NavigationManager.NavigateTo(redirectUrl, forceLoad: false);
+                return;
             }
             else
             {
@@ -168,25 +161,10 @@
         }
         finally
         {
-            isLoading = false;
-            StateHasChanged();
-        }
-    }
-
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (firstRender)
-        {
-            _hasRendered = true;
-            
-            // Flush any pending tokens if component wasn't interactive during login
-            try
+            if (!navigationStarted)
             {
-                await AuthApi.TryFlushPendingAsync();
-            }
-            catch (Exception ex)
-            {
-                Logger.LogDebug(ex, "OnAfterRenderAsync: Could not flush pending tokens");
+                isLoading = false;
+                StateHasChanged();
             }
         }
     }
@@ -196,11 +174,6 @@
         errorMessage = null;
         showRetryButton = false;
         StateHasChanged();
-    }
-
-    public void Dispose()
-    {
-        // No resources to dispose
     }
 
     private sealed class InputModel
