@@ -22,7 +22,7 @@
 </head>
 
 <body class="bg-gray-100">
-    <Routes @rendermode="InteractiveServer" />
+    <Routes @rendermode="new InteractiveServerRenderMode(prerender: false)" />
     <!-- Loading Screen displayed while Blazor initializes -->
     <div id="loading-screen">
         <div class="logo-container">
@@ -83,5 +83,4 @@
     </script>
 </body>
 </html>
-
 

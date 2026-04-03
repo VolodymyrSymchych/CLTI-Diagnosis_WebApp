@@ -399,14 +399,14 @@ builder.Services.AddHttpClient("InternalApi", (sp, client) =>
     string baseUrl;
     if (environment.IsDevelopment())
     {
-        baseUrl = "https://localhost:7124";
+        baseUrl = configuration["InternalApi:BaseUrl"] ?? "https://localhost:7124";
     }
     else
     {
         // In production, call the API on the same process via loopback to avoid
         // HTTPS redirect loops behind Render's TLS-terminating reverse proxy.
         var port = Environment.GetEnvironmentVariable("PORT") ?? configuration["PORT"] ?? "10000";
-        baseUrl = configuration["InternalApi:BaseUrl"] ?? $"http://localhost:{port}";
+        baseUrl = $"http://127.0.0.1:{port}";
     }
 
     client.BaseAddress = new Uri(baseUrl);
@@ -562,7 +562,7 @@ app.MapPost("/Account/Logout", async (HttpContext context) =>
 });
 
 // ✅ HEALTH CHECK ENDPOINT
-app.MapGet("/health", () =>
+app.MapMethods("/health", new[] { "GET", "HEAD" }, () =>
 {
     return Results.Ok(new
     {
