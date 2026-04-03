@@ -119,8 +119,6 @@ public class SessionStorageService : ISessionStorageService
             {
                 try
                 {
-                    // Ensure session is loaded - touch it first
-                    HttpContext.Session.SetString("_touch", "1");
                     var sessionUserId = HttpContext.Session.GetString("_userId");
                     if (!string.IsNullOrEmpty(sessionUserId) && int.TryParse(sessionUserId, out var sessionUserIdInt))
                     {
@@ -435,10 +433,6 @@ public class SessionStorageService : ISessionStorageService
 
         try
         {
-            // Ensure session is loaded - this will create a new session if cookie is invalid
-            // Session middleware handles cookie decryption and creates new session if needed
-            HttpContext.Session.SetString("_initialized", "1"); // Touch session to ensure it's initialized
-            
             // Use ASP.NET Core's session ID - it handles cookie encryption/decryption automatically
             // If cookie is invalid, ASP.NET Core will create a new session with new ID
             var sessionId = HttpContext.Session.Id;
@@ -749,4 +743,3 @@ public class SessionStorageService : ISessionStorageService
         }
     }
 }
-
