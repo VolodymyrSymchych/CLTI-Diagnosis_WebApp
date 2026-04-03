@@ -233,13 +233,59 @@ namespace CLTI.Diagnosis.Controllers
                 _logger.LogInformation("Recent logs requested. Count: {Count}, RemoteIp: {RemoteIp}", 
                     count, HttpContext.Connection.RemoteIpAddress);
 
-                // This is a placeholder - in production you would read from actual log files or log storage
+                var safeCount = Math.Clamp(count, 1, 500);
+                var logsPath = Path.Combine(_environment.ContentRootPath, "logs");
+
+                if (!Directory.Exists(logsPath))
+                {
+                    return NotFound(new
+                    {
+                        Message = "Logs directory not found",
+                        LogsPath = logsPath,
+                        Timestamp = DateTime.UtcNow
+                    });
+                }
+
+                var logFiles = Directory.GetFiles(logsPath, "*.log")
+                    .OrderByDescending(System.IO.File.GetLastWriteTimeUtc)
+                    .Take(5)
+                    .ToArray();
+
+                var lines = new List<object>();
+
+                foreach (var file in logFiles)
+                {
+                    IEnumerable<string> fileLines;
+
+                    try
+                    {
+                        fileLines = System.IO.File.ReadLines(file).Reverse().Take(safeCount);
+                    }
+                    catch (Exception ex)
+                    {
+                        fileLines = new[]
+                        {
+                            $"Failed to read log file '{Path.GetFileName(file)}': {ex.Message}"
+                        };
+                    }
+
+                    foreach (var line in fileLines.Reverse())
+                    {
+                        lines.Add(new
+                        {
+                            File = Path.GetFileName(file),
+                            Line = line
+                        });
+                    }
+                }
+
                 var logInfo = new
                 {
-                    Message = "Log retrieval endpoint - implement based on your logging infrastructure",
-                    RequestedCount = count,
-                    Timestamp = DateTime.UtcNow,
-                    Note = "Configure this endpoint to read from your log storage (file, database, or external service)"
+                    RequestedCount = safeCount,
+                    LogsPath = logsPath,
+                    Files = logFiles.Select(Path.GetFileName).ToArray(),
+                    Entries = lines.TakeLast(safeCount).ToArray(),
+                    Timestamp = DateTime.UtcNow
                 };
 
                 return Ok(logInfo);

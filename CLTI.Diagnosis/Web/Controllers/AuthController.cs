@@ -11,6 +11,8 @@ using CLTI.Diagnosis.Data;
 using CLTI.Diagnosis.Core.Domain.Entities;
 using Microsoft.AspNetCore.Authorization;
 using CLTI.Diagnosis.Infrastructure.Services;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Identity;
 
 namespace CLTI.Diagnosis.Controllers
 
@@ -189,6 +191,28 @@ namespace CLTI.Diagnosis.Controllers
                 await _sessionStorage.SetRefreshTokenAsync(refreshToken, request.RememberMe, user.Id);
                 await _sessionStorage.SetUserAsync(userDto);
 
+                var claims = new List<Claim>
+                {
+                    new(ClaimTypes.NameIdentifier, user.Id.ToString()),
+                    new(ClaimTypes.Email, user.Email),
+                    new(ClaimTypes.Name, user.Email),
+                    new(ClaimTypes.GivenName, user.FirstName ?? string.Empty),
+                    new(ClaimTypes.Surname, user.LastName ?? string.Empty)
+                };
+
+                var principal = new ClaimsPrincipal(
+                    new ClaimsIdentity(claims, IdentityConstants.ApplicationScheme));
+
+                await HttpContext.SignInAsync(
+                    IdentityConstants.ApplicationScheme,
+                    principal,
+                    new AuthenticationProperties
+                    {
+                        IsPersistent = request.RememberMe,
+                        AllowRefresh = true,
+                        ExpiresUtc = DateTimeOffset.UtcNow.AddDays(request.RememberMe ? 30 : 1)
+                    });
+
                 // ✅ IMPORTANT: Commit session BEFORE returning response
                 // This ensures userId and session data are persisted for next request
                 if (HttpContext.Session != null)
@@ -335,6 +359,7 @@ namespace CLTI.Diagnosis.Controllers
                 
                 // Clear all session data (tokens, user info) from server-side storage
                 await _sessionStorage.ClearAllAsync();
+                await HttpContext.SignOutAsync(IdentityConstants.ApplicationScheme);
                 
                 return Ok(new ApiResponse<object>
                 {

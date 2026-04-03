@@ -16,6 +16,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Authentication;
 using System.Security.Claims;
 using CLTI.Diagnosis.Data;
+using CLTI.Diagnosis.Components.Account;
 using Serilog;
 using Microsoft.AspNetCore.DataProtection;
 using System.Globalization;
@@ -28,7 +29,11 @@ builder.Host.UseSerilog((context, configuration) =>
 
 // Add services to the container.
 builder.Services.AddRazorComponents()
-    .AddInteractiveServerComponents()
+    .AddInteractiveServerComponents(options =>
+    {
+        options.DetailedErrors = builder.Environment.IsDevelopment()
+            || builder.Configuration.GetValue<bool>("DetailedErrors");
+    })
     .AddInteractiveWebAssemblyComponents();
 
 // API controllers
@@ -366,7 +371,9 @@ builder.Services.AddAuthorizationCore(options =>
 
 // ✅ IDENTITY ДЛЯ BLAZOR SERVER
 builder.Services.AddCascadingAuthenticationState();
-builder.Services.AddScoped<AuthenticationStateProvider, JwtAuthenticationStateProvider>();
+builder.Services.AddScoped<ServerSessionAuthenticationStateProvider>();
+builder.Services.AddScoped<AuthenticationStateProvider>(sp =>
+    sp.GetRequiredService<ServerSessionAuthenticationStateProvider>());
 
 // Application services
 builder.Services.AddScoped<ApiKeyService>();
