@@ -10,7 +10,7 @@ namespace CLTI.Diagnosis.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    [Authorize] // ✅ Тепер використовує JWT за замовчуванням
+    [Authorize(Policy = "HybridPolicy")]
     public class UserController : ControllerBase
     {
         private readonly IUserService _userService;

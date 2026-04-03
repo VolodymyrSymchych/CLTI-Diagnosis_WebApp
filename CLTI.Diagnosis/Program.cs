@@ -20,6 +20,7 @@ using CLTI.Diagnosis.Components.Account;
 using Serilog;
 using Microsoft.AspNetCore.DataProtection;
 using System.Globalization;
+using Npgsql;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -131,34 +132,88 @@ static async Task EnsurePostgresCaseSchemaAsync(IServiceProvider services)
     var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
     var logger = scope.ServiceProvider.GetRequiredService<ILoggerFactory>().CreateLogger("PostgresSchemaBootstrap");
 
-    var commands = new[]
+    var commands = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
     {
-        """ALTER TABLE "u_clti" ADD COLUMN IF NOT EXISTS "PatientFullName" character varying(200) NOT NULL DEFAULT 'Без імені';""",
-        """ALTER TABLE "u_clti" ADD COLUMN IF NOT EXISTS "CaseStatus" character varying(20) NOT NULL DEFAULT 'Open';""",
-        """ALTER TABLE "u_clti" ADD COLUMN IF NOT EXISTS "LastVisitedStep" character varying(256);""",
-        """ALTER TABLE "u_clti" ADD COLUMN IF NOT EXISTS "LastClosedStep" character varying(256);""",
-        """ALTER TABLE "u_clti" ADD COLUMN IF NOT EXISTS "IsWCompleted" boolean NOT NULL DEFAULT FALSE;""",
-        """ALTER TABLE "u_clti" ADD COLUMN IF NOT EXISTS "IsICompleted" boolean NOT NULL DEFAULT FALSE;""",
-        """ALTER TABLE "u_clti" ADD COLUMN IF NOT EXISTS "IsfICompleted" boolean NOT NULL DEFAULT FALSE;""",
-        """ALTER TABLE "u_clti" ADD COLUMN IF NOT EXISTS "IsWiFIResultsCompleted" boolean NOT NULL DEFAULT FALSE;""",
-        """ALTER TABLE "u_clti" ADD COLUMN IF NOT EXISTS "IsCRABCompleted" boolean NOT NULL DEFAULT FALSE;""",
-        """ALTER TABLE "u_clti" ADD COLUMN IF NOT EXISTS "Is2YLECompleted" boolean NOT NULL DEFAULT FALSE;""",
-        """ALTER TABLE "u_clti" ADD COLUMN IF NOT EXISTS "IsSurgicalRiskCompleted" boolean NOT NULL DEFAULT FALSE;""",
-        """ALTER TABLE "u_clti" ADD COLUMN IF NOT EXISTS "IsGLASSCompleted" boolean NOT NULL DEFAULT FALSE;""",
-        """ALTER TABLE "u_clti" ADD COLUMN IF NOT EXISTS "IsGLASSFemoroPoplitealCompleted" boolean NOT NULL DEFAULT FALSE;""",
-        """ALTER TABLE "u_clti" ADD COLUMN IF NOT EXISTS "IsGLASSInfrapoplitealCompleted" boolean NOT NULL DEFAULT FALSE;""",
-        """ALTER TABLE "u_clti" ADD COLUMN IF NOT EXISTS "IsGLASSFinalCompleted" boolean NOT NULL DEFAULT FALSE;""",
-        """ALTER TABLE "u_clti" ADD COLUMN IF NOT EXISTS "IsSubmalleolarDiseaseCompleted" boolean NOT NULL DEFAULT FALSE;""",
-        """ALTER TABLE "u_clti" ADD COLUMN IF NOT EXISTS "IsRevascularizationAssessmentCompleted" boolean NOT NULL DEFAULT FALSE;""",
-        """ALTER TABLE "u_clti" ADD COLUMN IF NOT EXISTS "IsRevascularizationMethodCompleted" boolean NOT NULL DEFAULT FALSE;"""
+        ["PatientFullName"] = """ALTER TABLE "u_clti" ADD COLUMN IF NOT EXISTS "PatientFullName" character varying(200) NOT NULL DEFAULT 'Без імені';""",
+        ["CaseStatus"] = """ALTER TABLE "u_clti" ADD COLUMN IF NOT EXISTS "CaseStatus" character varying(20) NOT NULL DEFAULT 'Open';""",
+        ["LastVisitedStep"] = """ALTER TABLE "u_clti" ADD COLUMN IF NOT EXISTS "LastVisitedStep" character varying(256);""",
+        ["LastClosedStep"] = """ALTER TABLE "u_clti" ADD COLUMN IF NOT EXISTS "LastClosedStep" character varying(256);""",
+        ["IsWCompleted"] = """ALTER TABLE "u_clti" ADD COLUMN IF NOT EXISTS "IsWCompleted" boolean NOT NULL DEFAULT FALSE;""",
+        ["IsICompleted"] = """ALTER TABLE "u_clti" ADD COLUMN IF NOT EXISTS "IsICompleted" boolean NOT NULL DEFAULT FALSE;""",
+        ["IsfICompleted"] = """ALTER TABLE "u_clti" ADD COLUMN IF NOT EXISTS "IsfICompleted" boolean NOT NULL DEFAULT FALSE;""",
+        ["IsWiFIResultsCompleted"] = """ALTER TABLE "u_clti" ADD COLUMN IF NOT EXISTS "IsWiFIResultsCompleted" boolean NOT NULL DEFAULT FALSE;""",
+        ["IsCRABCompleted"] = """ALTER TABLE "u_clti" ADD COLUMN IF NOT EXISTS "IsCRABCompleted" boolean NOT NULL DEFAULT FALSE;""",
+        ["Is2YLECompleted"] = """ALTER TABLE "u_clti" ADD COLUMN IF NOT EXISTS "Is2YLECompleted" boolean NOT NULL DEFAULT FALSE;""",
+        ["IsSurgicalRiskCompleted"] = """ALTER TABLE "u_clti" ADD COLUMN IF NOT EXISTS "IsSurgicalRiskCompleted" boolean NOT NULL DEFAULT FALSE;""",
+        ["IsGLASSCompleted"] = """ALTER TABLE "u_clti" ADD COLUMN IF NOT EXISTS "IsGLASSCompleted" boolean NOT NULL DEFAULT FALSE;""",
+        ["IsGLASSFemoroPoplitealCompleted"] = """ALTER TABLE "u_clti" ADD COLUMN IF NOT EXISTS "IsGLASSFemoroPoplitealCompleted" boolean NOT NULL DEFAULT FALSE;""",
+        ["IsGLASSInfrapoplitealCompleted"] = """ALTER TABLE "u_clti" ADD COLUMN IF NOT EXISTS "IsGLASSInfrapoplitealCompleted" boolean NOT NULL DEFAULT FALSE;""",
+        ["IsGLASSFinalCompleted"] = """ALTER TABLE "u_clti" ADD COLUMN IF NOT EXISTS "IsGLASSFinalCompleted" boolean NOT NULL DEFAULT FALSE;""",
+        ["IsSubmalleolarDiseaseCompleted"] = """ALTER TABLE "u_clti" ADD COLUMN IF NOT EXISTS "IsSubmalleolarDiseaseCompleted" boolean NOT NULL DEFAULT FALSE;""",
+        ["IsRevascularizationAssessmentCompleted"] = """ALTER TABLE "u_clti" ADD COLUMN IF NOT EXISTS "IsRevascularizationAssessmentCompleted" boolean NOT NULL DEFAULT FALSE;""",
+        ["IsRevascularizationMethodCompleted"] = """ALTER TABLE "u_clti" ADD COLUMN IF NOT EXISTS "IsRevascularizationMethodCompleted" boolean NOT NULL DEFAULT FALSE;"""
     };
 
-    foreach (var sql in commands)
+    await using var connection = new NpgsqlConnection(db.Database.GetConnectionString());
+    await connection.OpenAsync();
+
+    var existingColumns = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+    const string query = """
+                         SELECT column_name
+                         FROM information_schema.columns
+                         WHERE table_schema = 'public' AND table_name = 'u_clti';
+                         """;
+
+    await using (var command = new NpgsqlCommand(query, connection))
     {
-        await db.Database.ExecuteSqlRawAsync(sql);
+        await using var reader = await command.ExecuteReaderAsync();
+        while (await reader.ReadAsync())
+        {
+            existingColumns.Add(reader.GetString(0));
+        }
+    }
+
+    var missingColumns = commands.Keys.Where(column => !existingColumns.Contains(column)).ToList();
+    if (missingColumns.Count == 0)
+    {
+        logger.LogInformation("Postgres schema bootstrap skipped. u_clti already has all required columns.");
+        return;
+    }
+
+    logger.LogWarning("Postgres schema bootstrap is adding missing columns: {Columns}", string.Join(", ", missingColumns));
+
+    foreach (var column in missingColumns)
+    {
+        await db.Database.ExecuteSqlRawAsync(commands[column]);
     }
 
     logger.LogInformation("Postgres schema bootstrap for u_clti completed.");
+}
+
+static string ResolveDataProtectionKeysPath(WebApplicationBuilder builder)
+{
+    var configuredPath =
+        builder.Configuration["DataProtection:KeysPath"]
+        ?? Environment.GetEnvironmentVariable("DATA_PROTECTION_KEYS_PATH");
+
+    if (!string.IsNullOrWhiteSpace(configuredPath))
+    {
+        return configuredPath;
+    }
+
+    var renderDiskPath = Environment.GetEnvironmentVariable("RENDER_DISK_PATH");
+    if (!string.IsNullOrWhiteSpace(renderDiskPath))
+    {
+        return Path.Combine(renderDiskPath, "clti-keys");
+    }
+
+    const string renderDefaultDiskPath = "/var/data";
+    if (Directory.Exists(renderDefaultDiskPath))
+    {
+        return Path.Combine(renderDefaultDiskPath, "clti-keys");
+    }
+
+    return Path.Combine(builder.Environment.ContentRootPath, "Keys");
 }
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
@@ -175,7 +230,7 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 
 // ✅ DATA PROTECTION (required for session encryption)
 // Persist keys so session cookies survive app restarts
-var keysPath = Path.Combine(builder.Environment.ContentRootPath, "Keys");
+var keysPath = ResolveDataProtectionKeysPath(builder);
 Directory.CreateDirectory(keysPath);
 
 builder.Services.AddDataProtection()

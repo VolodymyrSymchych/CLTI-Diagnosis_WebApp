@@ -136,5 +136,64 @@
             setTimeout(showApp, 350);
         });
     </script>
+    <script>
+        (function () {
+            const intervalMs = 4 * 60 * 1000;
+            let timerId = null;
+
+            async function ping() {
+                if (document.visibilityState !== 'visible' || !navigator.onLine) {
+                    return;
+                }
+
+                try {
+                    await fetch('/health', {
+                        method: 'GET',
+                        cache: 'no-store',
+                        credentials: 'same-origin',
+                        keepalive: true,
+                        headers: {
+                            'X-CLTI-KeepAlive': '1'
+                        }
+                    });
+                } catch {
+                }
+            }
+
+            function start() {
+                if (timerId !== null) {
+                    return;
+                }
+
+                timerId = window.setInterval(ping, intervalMs);
+            }
+
+            function stop() {
+                if (timerId === null) {
+                    return;
+                }
+
+                window.clearInterval(timerId);
+                timerId = null;
+            }
+
+            document.addEventListener('visibilitychange', () => {
+                if (document.visibilityState === 'visible') {
+                    ping();
+                    start();
+                } else {
+                    stop();
+                }
+            });
+
+            window.addEventListener('online', ping);
+            window.addEventListener('beforeunload', stop);
+
+            if (document.visibilityState === 'visible') {
+                ping();
+                start();
+            }
+        })();
+    </script>
 </body>
 </html>

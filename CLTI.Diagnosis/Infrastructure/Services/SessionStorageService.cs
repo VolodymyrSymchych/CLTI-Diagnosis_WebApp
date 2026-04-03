@@ -143,11 +143,6 @@ public class SessionStorageService : ISessionStorageService
                     if (!string.IsNullOrEmpty(cachedUserId) && int.TryParse(cachedUserId, out var cachedUserIdInt))
                     {
                         _logger.LogDebug("GetUserId: Found userId in distributed cache: {UserId}", cachedUserIdInt);
-                        // Restore to session for faster access
-                        if (HttpContext?.Session != null)
-                        {
-                            HttpContext.Session.SetString("_userId", cachedUserId);
-                        }
                         return cachedUserIdInt;
                     }
                 }
@@ -198,39 +193,6 @@ public class SessionStorageService : ISessionStorageService
                         if (!string.IsNullOrEmpty(extractedUserId) && int.TryParse(extractedUserId, out var userIdFromToken))
                         {
                             _logger.LogInformation("✅ GetUserId: Extracted userId from JWT token in Authorization header: {UserId}", userIdFromToken);
-                            
-                            // Store in session and cache for faster access next time
-                            if (HttpContext?.Session != null)
-                            {
-                                HttpContext.Session.SetString("_userId", userIdFromToken.ToString());
-                            }
-                            
-                            // Also store in distributed cache
-                            if (!string.IsNullOrEmpty(sessionId))
-                            {
-                                var userIdCacheKey = $"{sessionId}:{USER_ID_KEY}";
-                                await _cache.SetStringAsync(userIdCacheKey, userIdFromToken.ToString(), 
-                                    new DistributedCacheEntryOptions { AbsoluteExpirationRelativeToNow = TimeSpan.FromDays(30) });
-                            }
-                            
-                            // ✅ Also set cookie for future requests
-                            if (HttpContext?.Response != null)
-                            {
-                                var request = HttpContext.Request;
-                                var cookieOptions = new CookieOptions
-                                {
-                                    HttpOnly = true,
-                                    Secure = request.IsHttps,
-                                    SameSite = SameSiteMode.Lax,
-                                    IsEssential = true,
-                                    Expires = DateTimeOffset.UtcNow.AddDays(30),
-                                    Path = "/",
-                                    Domain = null
-                                };
-                                HttpContext.Response.Cookies.Append("_userId", userIdFromToken.ToString(), cookieOptions);
-                                _logger.LogDebug("GetUserId: Restored userId cookie from JWT token");
-                            }
-                            
                             return userIdFromToken;
                         }
                     }
@@ -257,22 +219,6 @@ public class SessionStorageService : ISessionStorageService
                     if (!string.IsNullOrEmpty(userIdCookie) && int.TryParse(userIdCookie, out var userIdFromCookie))
                     {
                         _logger.LogInformation("✅ GetUserId: Found userId in cookie: {UserId}", userIdFromCookie);
-                        
-                        // Restore to session and cache for faster access
-                        if (HttpContext.Session != null)
-                        {
-                            HttpContext.Session.SetString("_userId", userIdFromCookie.ToString());
-                            _logger.LogDebug("GetUserId: Restored userId to session");
-                        }
-                        
-                        if (!string.IsNullOrEmpty(sessionId))
-                        {
-                            var userIdCacheKey = $"{sessionId}:{USER_ID_KEY}";
-                            await _cache.SetStringAsync(userIdCacheKey, userIdFromCookie.ToString(), 
-                                new DistributedCacheEntryOptions { AbsoluteExpirationRelativeToNow = TimeSpan.FromDays(30) });
-                            _logger.LogDebug("GetUserId: Stored userId in cache with new session ID");
-                        }
-                        
                         return userIdFromCookie;
                     }
                     else
